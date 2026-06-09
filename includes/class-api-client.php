@@ -17,13 +17,18 @@ defined( 'ABSPATH' ) || exit;
 final class Api_Client {
 
 	/**
-	 * Mapa de entornos → URL base de la API de Vio.
+	 * URLs base por entorno.
 	 *
-	 * @TODO Sustituir por las URLs reales de Vio (prod y staging).
+	 * Hoy apuntan a la plataforma Reachu. Cuando Vio exponga su dominio
+	 * (p. ej. https://api-commerce.vio.live) la migración es de una sola línea
+	 * aquí — o sin tocar código definiendo la constante en wp-config.php:
+	 *
+	 *   define( 'VIO_WC_SYNC_API_URL_PRODUCTION', 'https://api-commerce.vio.live' );
+	 *   define( 'VIO_WC_SYNC_API_URL_STAGING',    'https://api-staging-commerce.vio.live' );
 	 */
 	public const ENVIRONMENTS = [
-		'production' => 'https://api.vio.example',
-		'staging'    => 'https://api-staging.vio.example',
+		'production' => 'https://api.reachu.io',
+		'staging'    => 'https://api-qa.reachu.io',
 	];
 
 	public const DEFAULT_ENVIRONMENT = 'production';
@@ -45,10 +50,17 @@ final class Api_Client {
 	}
 
 	public static function base_url(): string {
-		$env  = self::environment();
-		$base = self::ENVIRONMENTS[ $env ] ?? self::ENVIRONMENTS[ self::DEFAULT_ENVIRONMENT ];
+		$env = self::environment();
 
-		/** Permite sobrescribir la URL base (p. ej. local/ngrok) sin tocar código. */
+		// 1) Constante específica por entorno en wp-config.php (override sin tocar código).
+		$constant = 'VIO_WC_SYNC_API_URL_' . strtoupper( $env );
+		if ( defined( $constant ) && '' !== (string) constant( $constant ) ) {
+			$base = (string) constant( $constant );
+		} else {
+			$base = self::ENVIRONMENTS[ $env ] ?? self::ENVIRONMENTS[ self::DEFAULT_ENVIRONMENT ];
+		}
+
+		// 2) Filtro de override total (p. ej. local/ngrok o un dominio nuevo).
 		return untrailingslashit( (string) apply_filters( 'vio_wc_sync_api_base', $base, $env ) );
 	}
 
@@ -104,7 +116,7 @@ final class Api_Client {
 	}
 
 	// --- Endpoints --------------------------------------------------------
-	// @TODO Confirmar los paths definitivos de la API de Vio (hoy replican Reachu).
+	// Paths compartidos con la plataforma Reachu; se mantienen iguales para Vio.
 
 	public static function get_current_user() {
 		return self::request( '/catalog/users/me' );

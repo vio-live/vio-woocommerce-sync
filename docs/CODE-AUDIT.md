@@ -55,8 +55,15 @@ assets/{js,css,img}/  ·  readme.txt  ·  languages/
 - HPOS declarado.
 - Sin dependencias muertas; versionado semántico (1.0.0).
 
+## Estado de la API
+- **Entornos configurados**: `production` → `https://api.reachu.io`,
+  `staging` → `https://api-qa.reachu.io`.
+- Migración a Vio (`https://api-commerce.vio.live`) sin fricción, por orden de prioridad:
+  1. Constante en `wp-config.php`: `define( 'VIO_WC_SYNC_API_URL_PRODUCTION', 'https://api-commerce.vio.live' );`
+  2. Editar una línea en `Api_Client::ENVIRONMENTS`.
+  3. Filtro `vio_wc_sync_api_base`.
+- **Endpoints**: iguales a la plataforma Reachu (confirmado).
+
 ## Pendiente (⏳)
-- URL real de la API de Vio (prod/staging) en `Api_Client::ENVIRONMENTS`.
-- Confirmar que los **paths** de los endpoints de Vio coinciden con los de Reachu.
 - Assets de marca definitivos (`assets/img/`).
-- URLs de marca (signup, docs, legales).
+- URLs de marca (signup, docs, legales) cuando estén los dominios de Vio.
