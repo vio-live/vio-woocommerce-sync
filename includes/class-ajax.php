@@ -61,18 +61,22 @@ final class Ajax {
 			wp_send_json_error( [ 'message' => 'no_ids' ] );
 		}
 
-		$remote_ids = [];
+		// Batch-delete the known remote products, and unlink every selected post
+		// locally — including "Sent"-only ones that have no remote id yet.
+		$remote_ids = array();
 		foreach ( $post_ids as $post_id ) {
 			$remote_id = Product_Mapper::get_remote_product_id( $api_key, $post_id );
 			if ( $remote_id ) {
 				$remote_ids[] = $remote_id;
-				Sync::delete_by_post( $post_id, $api_key );
 			}
+			Sync::delete_by_post( $post_id, $api_key, false );
 		}
 
 		if ( $remote_ids ) {
 			Api_Client::delete_products( $remote_ids );
 		}
+
+		Logger::info( '[delete] unlinked posts ' . implode( ',', $post_ids ) );
 		wp_send_json_success();
 	}
 

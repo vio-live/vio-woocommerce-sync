@@ -68,12 +68,15 @@ final class Products_Table {
 
 		if ( $product_id ) {
 			printf(
-				'<img class="vio-icon" src="%s" alt="%s" width="20" />',
+				'<img class="vio-icon" src="%s" alt="%s" title="%s" width="20" />',
 				esc_url( VIO_WC_SYNC_URL . 'assets/img/icon.svg' ),
+				esc_attr__( 'Synced with Vio', 'vio-woocommerce-sync' ),
 				esc_attr__( 'Synced with Vio', 'vio-woocommerce-sync' )
 			);
 		} elseif ( $sqs_id ) {
-			echo '<span class="vio-syncing">' . esc_html__( 'Syncing…', 'vio-woocommerce-sync' ) . '</span>';
+			echo '<span class="vio-syncing" title="'
+				. esc_attr__( 'Sent to Vio — waiting for it to finish processing the product.', 'vio-woocommerce-sync' )
+				. '">' . esc_html__( 'Sent', 'vio-woocommerce-sync' ) . '</span>';
 		}
 	}
 
@@ -119,18 +122,26 @@ final class Products_Table {
 			return;
 		}
 
-		if ( get_post_meta( $post_id, Plugin::META_ORIGIN, true ) ) {
-			self::delete_product_images( $post_id );
-		}
-		Sync::delete_by_post( $post_id, $api_key, 'trash' );
+		// Trashing a synced product unlinks it from Vio (delete remote + clear meta).
+		// Attachments are kept here so the product can be restored from the trash.
+		Sync::delete_by_post( $post_id, $api_key, true );
 	}
 
 	/**
 	 * @param int|string $post_id
 	 */
 	public static function on_before_delete( $post_id ): void {
-		if ( get_post_meta( (int) $post_id, Plugin::META_ORIGIN, true ) ) {
-			self::delete_product_images( (int) $post_id );
+		$post_id = (int) $post_id;
+
+		// Products imported FROM Vio carry Vio-owned images: drop them on permanent delete.
+		if ( get_post_meta( $post_id, Plugin::META_ORIGIN, true ) ) {
+			self::delete_product_images( $post_id );
+		}
+
+		// Unlink from Vio if still linked (e.g. permanently deleted without trashing first).
+		$api_key = Api_Client::api_key();
+		if ( '' !== $api_key ) {
+			Sync::delete_by_post( $post_id, $api_key, true );
 		}
 	}
 

@@ -92,21 +92,27 @@ final class Sync {
 	}
 
 	/**
-	 * Delete the Vio product linked to a post and clear its meta.
+	 * Unlink a product from Vio: delete the remote product (when its id is known)
+	 * and clear the local sync meta. Works for "Sent"-only products too.
+	 *
+	 * @param bool $delete_remote Also delete the product in Vio when its id is known.
 	 */
-	public static function delete_by_post( int $post_id, string $user_api_key, ?string $delete_type = null ): void {
+	public static function delete_by_post( int $post_id, string $user_api_key, bool $delete_remote = true ): void {
 		$remote_id = Product_Mapper::get_remote_product_id( $user_api_key, $post_id );
 		$sqs_id    = get_post_meta( $post_id, Plugin::META_SQS_ID, true );
 
-		if ( $remote_id ) {
-			if ( 'trash' === $delete_type ) {
-				Api_Client::delete_product( $remote_id );
-			}
-			self::clear_product_meta( $post_id );
-			Logger::info( '[delete_by_post] product ' . $remote_id . ' deleted (post ' . $post_id . ')' );
-		} elseif ( $sqs_id ) {
-			self::clear_product_meta( $post_id );
+		// Not linked to Vio at all → nothing to do.
+		if ( ! $remote_id && '' === (string) $sqs_id ) {
+			return;
 		}
+
+		if ( $delete_remote && $remote_id ) {
+			Api_Client::delete_product( $remote_id );
+			Logger::info( '[delete_by_post] remote product ' . $remote_id . ' deleted (post ' . $post_id . ')' );
+		}
+
+		// Always clear the local sync state so the product is fully unlinked.
+		self::clear_product_meta( $post_id );
 	}
 
 	private static function clear_product_meta( int $post_id ): void {
