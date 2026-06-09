@@ -17,11 +17,9 @@ defined( 'ABSPATH' ) || exit;
 final class Api_Client {
 
 	/**
-	 * Base URLs per environment.
+	 * Base URLs per environment (Vio commerce backend).
 	 *
-	 * These point at the Reachu platform today. Once Vio exposes its own domain
-	 * (e.g. https://api-commerce.vio.live) migration is a one-line change here —
-	 * or zero code by defining the constant in wp-config.php:
+	 * Each environment can be overridden from wp-config.php (zero code change):
 	 *
 	 *   define( 'VIO_WC_SYNC_API_URL_PRODUCTION', 'https://api-commerce.vio.live' );
 	 *   define( 'VIO_WC_SYNC_API_URL_STAGING',    'https://api-staging-commerce.vio.live' );
@@ -116,7 +114,7 @@ final class Api_Client {
 	}
 
 	// --- Endpoints --------------------------------------------------------
-	// Paths shared with the Reachu platform; kept identical for Vio.
+	// Vio commerce API endpoints.
 
 	public static function get_current_user() {
 		return self::request( '/catalog/users/me' );

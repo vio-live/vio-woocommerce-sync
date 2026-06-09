@@ -15,12 +15,13 @@ defined( 'ABSPATH' ) || exit;
 final class Sync {
 
 	/**
-	 * Batch create/update (manual export).
+	 * Batch export — queues the products in Vio (manual "Vio Sync").
 	 *
 	 * @param int[]  $post_ids
 	 * @param string $user_api_key
+	 * @return bool True if the batch was accepted by the API.
 	 */
-	public static function push_products( array $post_ids, string $user_api_key ): void {
+	public static function push_products( array $post_ids, string $user_api_key ): bool {
 		$batched = [];
 		foreach ( $post_ids as $post_id ) {
 			$batched[] = [ 'product' => Product_Mapper::to_dto( $post_id ) ];
@@ -28,15 +29,17 @@ final class Sync {
 
 		$result = Api_Client::create_products( [ 'products' => $batched ] );
 
-		if ( ! is_wp_error( $result ) && isset( $result->messageId ) ) {
-			foreach ( $post_ids as $post_id ) {
-				update_post_meta( $post_id, Plugin::META_SQS_ID, $result->messageId );
-				update_post_meta( $post_id, Plugin::META_APIKEY, $user_api_key );
-			}
-			Logger::info( '[push_products] batch sent, messageId ' . $result->messageId );
-		} else {
+		if ( is_wp_error( $result ) || ! isset( $result->messageId ) ) {
 			Logger::error( '[push_products] error creating products: ' . implode( ',', $post_ids ) );
+			return false;
 		}
+
+		foreach ( $post_ids as $post_id ) {
+			update_post_meta( $post_id, Plugin::META_SQS_ID, $result->messageId );
+			update_post_meta( $post_id, Plugin::META_APIKEY, $user_api_key );
+		}
+		Logger::info( '[push_products] batch queued, messageId ' . $result->messageId );
+		return true;
 	}
 
 	/**

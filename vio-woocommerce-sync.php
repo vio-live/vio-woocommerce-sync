@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name:          Vio WooCommerce Sync
- * Plugin URI:           https://reachu.io/
+ * Plugin URI:           https://vio.live/
  * Description:          Sync WooCommerce products to the Vio platform (inventory, prices, variants and images).
  * Version:              1.0.0
  * Requires at least:    6.0
  * Requires PHP:         8.0
  * Author:               Vio
- * Author URI:           https://reachu.io/
+ * Author URI:           https://vio.live/
  * License:              GPL-2.0-or-later
  * License URI:          https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:          vio-woocommerce-sync

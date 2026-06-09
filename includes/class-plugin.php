@@ -89,10 +89,23 @@ final class Plugin {
 	}
 
 	private static function remove_webhooks(): void {
-		$data_store = \WC_Data_Store::load( 'webhook' );
-		foreach ( $data_store->search_webhooks() as $webhook_id ) {
+		$data_store   = \WC_Data_Store::load( 'webhook' );
+		$backend_host = (string) wp_parse_url( Api_Client::base_url(), PHP_URL_HOST );
+
+		foreach ( $data_store->search_webhooks( array( 'limit' => -1 ) ) as $webhook_id ) {
 			$webhook = wc_get_webhook( $webhook_id );
-			if ( $webhook && in_array( $webhook->get_name(), self::WEBHOOK_NAMES, true ) ) {
+			if ( ! $webhook ) {
+				continue;
+			}
+
+			// Match by managed name, or by a delivery URL pointing at the Vio backend.
+			$is_vio = in_array( $webhook->get_name(), self::WEBHOOK_NAMES, true );
+			if ( ! $is_vio && '' !== $backend_host ) {
+				$host   = (string) wp_parse_url( (string) $webhook->get_delivery_url(), PHP_URL_HOST );
+				$is_vio = '' !== $host && $host === $backend_host;
+			}
+
+			if ( $is_vio ) {
 				$webhook->delete( true );
 				Logger::info( 'Webhook removed: ' . $webhook->get_name() );
 			}

@@ -45,8 +45,10 @@ final class Ajax {
 		}
 
 		Logger::info( '[sync] postIds ' . implode( ',', $post_ids ) );
-		Sync::push_products( $post_ids, Api_Client::api_key() );
-		wp_send_json_success();
+		if ( Sync::push_products( $post_ids, Api_Client::api_key() ) ) {
+			wp_send_json_success();
+		}
+		wp_send_json_error( array( 'message' => 'sync_failed' ) );
 	}
 
 	public static function delete(): void {

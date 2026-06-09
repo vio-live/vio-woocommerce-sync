@@ -27,6 +27,27 @@
 	margin: 0.5em 0 1em;
 }
 
+/* Connected state (settings tab) */
+.vio-connected {
+	padding: 1em 1.25em;
+	margin: 1em 0;
+}
+
+.vio-connected__title {
+	margin: 0 0 0.4em;
+	color: #1d643b;
+}
+
+.vio-connected__details {
+	margin: 0;
+	padding-left: 1.2em;
+	color: #50575e;
+}
+
+.vio-connected__actions {
+	margin-top: 1em;
+}
+
 /* ====== Bulk-action progress modal ====== */
 .vio-progress {
 	position: fixed;

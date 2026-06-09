@@ -113,47 +113,68 @@ final class Settings {
 	}
 
 	public static function render(): void {
-		if ( ! Api_Client::has_api_key() ) {
-			woocommerce_admin_fields( self::get_settings() );
+		$has_key = Api_Client::has_api_key();
+		$user    = $has_key ? Api_Client::get_current_user() : null;
+		$valid   = $user && ! is_wp_error( $user ) && isset( $user->id );
+
+		// Fully connected (valid API key + store webhook present): show only the
+		// success notice and the Disconnect action — no fields, no Connect button.
+		if ( $valid && self::webhook_exists() ) {
+			self::render_connected( $user );
+			return;
+		}
+
+		// Not fully connected → show the configuration fields.
+		woocommerce_admin_fields( self::get_settings() );
+
+		if ( ! $has_key ) {
 			self::render_signup();
 			return;
 		}
 
-		$user = Api_Client::get_current_user();
-		if ( is_wp_error( $user ) || ! isset( $user->id ) ) {
-			woocommerce_admin_fields( self::get_settings() );
+		if ( ! $valid ) {
 			echo '<p class="vio-error">' . esc_html__( 'The API Key is not valid.', 'vio-woocommerce-sync' ) . '</p>';
 			return;
 		}
 
-		// Valid API key but no webhook yet → the store still needs to connect via OAuth.
-		if ( ! self::webhook_exists() ) {
-			$auth_url = Api_Client::authorization_url( (int) $user->id );
-			echo '<p class="vio-connect"><a class="button button-primary" href="' . esc_url( $auth_url ) . '">'
-				. esc_html__( 'Connect store', 'vio-woocommerce-sync' ) . '</a></p>';
-			return;
-		}
-
-		self::render_connected( $user );
+		// Valid API key but the store webhook isn't set up yet → let the user authorize.
+		$auth_url = Api_Client::authorization_url( (int) $user->id );
+		echo '<p class="vio-connect">';
+		printf(
+			/* translators: %s: username */
+			esc_html__( 'Connected to Vio as %s. Authorize the store to finish setup:', 'vio-woocommerce-sync' ),
+			esc_html( $user->username ?? '' )
+		);
+		echo ' <a class="button button-primary" href="' . esc_url( $auth_url ) . '">'
+			. esc_html__( 'Connect store', 'vio-woocommerce-sync' ) . '</a></p>';
 	}
 
 	private static function render_connected( object $user ): void {
 		$currency   = (string) get_option( Plugin::OPT_CURRENCY );
 		$logout_url = wp_nonce_url( admin_url( 'admin-ajax.php?action=vio_logout' ), 'vio_logout' );
 
-		echo '<h2>' . esc_html__( 'Your store is connected', 'vio-woocommerce-sync' ) . '</h2>';
-		echo '<p class="vio-account">'
-			. esc_html( sprintf( /* translators: %s: username */ __( 'Connected as %s', 'vio-woocommerce-sync' ), $user->username ?? '' ) )
-			. ( '' !== $currency ? ' · ' . esc_html( $currency ) : '' )
-			. '</p>';
-		echo '<p><a id="sync-all-button" class="button button-primary" href="' . esc_url( admin_url( 'edit.php?post_type=product' ) ) . '">'
-			. esc_html__( 'Go to products', 'vio-woocommerce-sync' ) . '</a> '
-			. '<a class="button" href="' . esc_url( $logout_url ) . '">' . esc_html__( 'Disconnect', 'vio-woocommerce-sync' ) . '</a></p>';
+		echo '<div class="notice notice-success inline vio-connected">';
+		echo '<h2 class="vio-connected__title">&#10003; ' . esc_html__( 'Your store is connected to Vio', 'vio-woocommerce-sync' ) . '</h2>';
+		echo '<ul class="vio-connected__details">';
+		echo '<li>' . esc_html( sprintf( /* translators: %s: Vio account/username */ __( 'Account: %s', 'vio-woocommerce-sync' ), $user->username ?? '' ) ) . '</li>';
+		if ( '' !== $currency ) {
+			echo '<li>' . esc_html( sprintf( /* translators: %s: currency code */ __( 'Currency: %s', 'vio-woocommerce-sync' ), $currency ) ) . '</li>';
+		}
+		echo '<li>' . esc_html__( 'REST API key created · Order webhooks active', 'vio-woocommerce-sync' ) . '</li>';
+		echo '</ul>';
+		echo '</div>';
+
+		echo '<p class="vio-connected__actions">';
+		echo '<a id="sync-all-button" class="button button-primary" href="' . esc_url( admin_url( 'edit.php?post_type=product' ) ) . '">'
+			. esc_html__( 'Go to products', 'vio-woocommerce-sync' ) . '</a> ';
+		echo '<a class="button button-link-delete" href="' . esc_url( $logout_url ) . '">'
+			. esc_html__( 'Disconnect', 'vio-woocommerce-sync' ) . '</a>';
+		echo '</p>';
 	}
 
 	private static function render_signup(): void {
 		// @TODO Real Vio sign-up URL.
-		$signup = (string) apply_filters( 'vio_wc_sync_signup_url', 'https://reachu.io/' );
+		$signup = (string) apply_filters( 'vio_wc_sync_signup_url', 'https://vio.live/' );
 		echo '<p class="vio-signup">' . esc_html__( "Don't have an account yet?", 'vio-woocommerce-sync' )
 			. ' <a href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">'
 			. esc_html__( 'Sign up', 'vio-woocommerce-sync' ) . '</a></p>';
@@ -161,10 +182,24 @@ final class Settings {
 
 	private static function webhook_exists(): bool {
 		$data_store = \WC_Data_Store::load( 'webhook' );
-		foreach ( $data_store->search_webhooks() as $webhook_id ) {
+		foreach ( $data_store->search_webhooks( array( 'limit' => -1 ) ) as $webhook_id ) {
 			$webhook = wc_get_webhook( $webhook_id );
-			if ( $webhook && in_array( $webhook->get_name(), Plugin::WEBHOOK_NAMES, true ) ) {
+			if ( ! $webhook ) {
+				continue;
+			}
+			// Match by one of the managed names…
+			if ( in_array( $webhook->get_name(), Plugin::WEBHOOK_NAMES, true ) ) {
 				return true;
+			}
+			// …or by a delivery URL whose host matches the configured Vio backend
+			// (the backend creates the webhook and may name it differently).
+			$url = (string) $webhook->get_delivery_url();
+			if ( '' !== $url ) {
+				$delivery_host = (string) wp_parse_url( $url, PHP_URL_HOST );
+				$backend_host  = (string) wp_parse_url( Api_Client::base_url(), PHP_URL_HOST );
+				if ( '' !== $delivery_host && $delivery_host === $backend_host ) {
+					return true;
+				}
 			}
 		}
 		return false;
