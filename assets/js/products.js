@@ -1,5 +1,5 @@
 /**
- * Bulk actions de Vio en la lista de productos (sync / delete) con modal de progreso.
+ * Vio bulk actions in the product list (sync / delete) with a progress modal.
  */
 ( function ( $ ) {
 	'use strict';
@@ -10,7 +10,7 @@
 				'<div class="vio-progress__logo"></div>' +
 				'<div class="vio-progress__bar"><div class="vio-progress__fill"></div></div>' +
 				'<div class="vio-progress__info">' +
-					'<p>Procesados: <strong class="vio-progress__done">0</strong></p>' +
+					'<p>Processed: <strong class="vio-progress__done">0</strong></p>' +
 					'<p>Total: <strong class="vio-progress__total">0</strong></p>' +
 				'</div>' +
 			'</div>' +

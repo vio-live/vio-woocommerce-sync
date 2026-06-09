@@ -1,15 +1,15 @@
 /**
- * Pantalla de ajustes de Vio.
+ * Vio settings screen.
  */
 ( function ( $ ) {
 	'use strict';
 
-	// Ir a la lista de productos.
+	// Go to the product list.
 	$( document ).on( 'click', '#sync-all-button', function () {
-		// El href ya apunta a la lista; este handler queda por compatibilidad.
+		// The href already points to the list; this handler is kept for compatibility.
 	} );
 
-	// Selector de moneda personalizado (opcional; los ajustes usan el select nativo de WC).
+	// Custom currency selector (optional; the settings use WC's native select).
 	$( document ).on( 'click', '.vio-select .default_option', function () {
 		$( this ).closest( '.vio-select__wrap' ).toggleClass( 'active' );
 	} );
@@ -20,7 +20,7 @@
 		$wrap.removeClass( 'active' );
 	} );
 
-	// Guardado de moneda vía AJAX (si se usa el selector personalizado).
+	// Currency save via AJAX (used only with the custom selector).
 	$( document ).on( 'click', '#vio-save-currency', function ( e ) {
 		e.preventDefault();
 		$( this ).prop( 'disabled', true );

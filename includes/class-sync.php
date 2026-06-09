@@ -1,7 +1,7 @@
 <?php
 /**
- * Servicio de sincronización: lógica de negocio para enviar, actualizar y
- * borrar productos en Vio. Lo usan tanto las acciones AJAX como el auto-sync.
+ * Sync service: business logic to push, update and delete products in Vio.
+ * Used by both the AJAX actions and the auto-sync hooks.
  *
  * @package Vio\WooSync
  */
@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 final class Sync {
 
 	/**
-	 * Alta/actualización por lotes (export manual).
+	 * Batch create/update (manual export).
 	 *
 	 * @param int[]  $post_ids
 	 * @param string $user_api_key
@@ -33,17 +33,17 @@ final class Sync {
 				update_post_meta( $post_id, Plugin::META_SQS_ID, $result->messageId );
 				update_post_meta( $post_id, Plugin::META_APIKEY, $user_api_key );
 			}
-			Logger::info( '[push_products] lote enviado, messageId ' . $result->messageId );
+			Logger::info( '[push_products] batch sent, messageId ' . $result->messageId );
 		} else {
-			Logger::error( '[push_products] error creando productos: ' . implode( ',', $post_ids ) );
+			Logger::error( '[push_products] error creating products: ' . implode( ',', $post_ids ) );
 		}
 	}
 
 	/**
-	 * Actualiza un producto ya existente en Vio (auto-sync al guardar).
+	 * Update a product that already exists in Vio (auto-sync on save).
 	 */
 	public static function update_product( int $post_id, string $user_api_key ): void {
-		// Si el producto se originó en Vio, no se reexporta.
+		// If the product originated in Vio, do not re-export it.
 		if ( get_post_meta( $post_id, Plugin::META_ORIGIN, true ) ) {
 			return;
 		}
@@ -61,7 +61,7 @@ final class Sync {
 
 		$changes = Product_Mapper::diff( $current, $remote );
 
-		// Inyecta los ids de variante de Vio en las variantes a actualizar.
+		// Inject the Vio variant ids into the variants being updated.
 		if ( isset( $changes['variants'] ) && $remote ) {
 			$remote_variants = isset( $remote->variants ) ? (array) $remote->variants : [];
 			foreach ( $changes['variants'] as &$variant ) {
@@ -76,20 +76,20 @@ final class Sync {
 		}
 
 		if ( empty( $changes ) ) {
-			Logger::info( '[update_product] sin cambios para ' . $remote_id );
+			Logger::info( '[update_product] no changes for ' . $remote_id );
 			return;
 		}
 
 		$updated = Api_Client::update_product( $remote_id, $changes );
 		if ( is_wp_error( $updated ) ) {
-			Logger::error( '[update_product] error actualizando ' . $remote_id );
+			Logger::error( '[update_product] error updating ' . $remote_id );
 		} else {
-			Logger::info( '[update_product] producto ' . $remote_id . ' actualizado' );
+			Logger::info( '[update_product] product ' . $remote_id . ' updated' );
 		}
 	}
 
 	/**
-	 * Borra en Vio el producto asociado a un post y limpia su meta.
+	 * Delete the Vio product linked to a post and clear its meta.
 	 */
 	public static function delete_by_post( int $post_id, string $user_api_key, ?string $delete_type = null ): void {
 		$remote_id = Product_Mapper::get_remote_product_id( $user_api_key, $post_id );
@@ -100,7 +100,7 @@ final class Sync {
 				Api_Client::delete_product( $remote_id );
 			}
 			self::clear_product_meta( $post_id );
-			Logger::info( '[delete_by_post] producto ' . $remote_id . ' borrado (post ' . $post_id . ')' );
+			Logger::info( '[delete_by_post] product ' . $remote_id . ' deleted (post ' . $post_id . ')' );
 		} elseif ( $sqs_id ) {
 			self::clear_product_meta( $post_id );
 		}

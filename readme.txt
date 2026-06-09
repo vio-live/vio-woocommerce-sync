@@ -8,32 +8,32 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Sincroniza productos de WooCommerce con la plataforma Vio: inventario, precios, variantes e imágenes.
+Sync products from your WooCommerce store to the Vio platform: inventory, prices, variants and images.
 
 == Description ==
 
-Vio WooCommerce Sync conecta tu tienda WooCommerce con Vio y mantiene tu catálogo
-sincronizado de forma automática.
+Vio WooCommerce Sync connects your WooCommerce store with Vio and keeps your catalog
+synchronized automatically.
 
-* Exporta productos (individuales o en lote) a Vio.
-* Sincroniza precios, stock, variantes, atributos e imágenes.
-* Actualiza automáticamente los productos al guardarlos.
-* Elimina productos de Vio desde la lista de productos.
-* Soporta entornos de **producción** y **staging**.
-* Compatible con HPOS (High-Performance Order Storage).
+* Export products (individually or in bulk) to Vio.
+* Sync prices, stock, variants, attributes and images.
+* Automatically update products whenever you save them.
+* Delete products from Vio straight from the product list.
+* Supports **production** and **staging** environments.
+* Compatible with HPOS (High-Performance Order Storage).
 
-== Configuración ==
+== Setup ==
 
-1. Instala y activa el plugin (requiere WooCommerce).
-2. Ve a **WooCommerce → Ajustes → Vio**.
-3. Introduce tu **API Key**, elige el **entorno** y la **moneda**, y conecta tu tienda.
+1. Install and activate the plugin (WooCommerce is required).
+2. Go to **WooCommerce → Settings → Vio**.
+3. Enter your **API Key**, pick the **environment** and **currency**, and connect your store.
 
-El entorno puede forzarse desde `wp-config.php`:
+The environment can be forced from `wp-config.php`:
 
 `define( 'VIO_WC_SYNC_ENV', 'staging' );`
 
 == Changelog ==
 
 = 1.0.0 =
-* Versión inicial: reescritura modular del conector, con marca Vio, manejo de
-  entornos prod/staging y refuerzos de seguridad.
+* Initial release: modular rewrite of the connector, Vio-branded, with production/staging
+  environment handling and security hardening.

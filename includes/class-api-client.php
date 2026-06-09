@@ -1,9 +1,9 @@
 <?php
 /**
- * Cliente HTTP de la API de Vio.
+ * HTTP client for the Vio API.
  *
- * Gestiona la selección de entorno (production / staging), la autenticación y
- * las llamadas a cada endpoint.
+ * Handles environment selection (production / staging), authentication and the
+ * call to each endpoint.
  *
  * @package Vio\WooSync
  */
@@ -17,11 +17,11 @@ defined( 'ABSPATH' ) || exit;
 final class Api_Client {
 
 	/**
-	 * URLs base por entorno.
+	 * Base URLs per environment.
 	 *
-	 * Hoy apuntan a la plataforma Reachu. Cuando Vio exponga su dominio
-	 * (p. ej. https://api-commerce.vio.live) la migración es de una sola línea
-	 * aquí — o sin tocar código definiendo la constante en wp-config.php:
+	 * These point at the Reachu platform today. Once Vio exposes its own domain
+	 * (e.g. https://api-commerce.vio.live) migration is a one-line change here —
+	 * or zero code by defining the constant in wp-config.php:
 	 *
 	 *   define( 'VIO_WC_SYNC_API_URL_PRODUCTION', 'https://api-commerce.vio.live' );
 	 *   define( 'VIO_WC_SYNC_API_URL_STAGING',    'https://api-staging-commerce.vio.live' );
@@ -36,9 +36,9 @@ final class Api_Client {
 	private const TIMEOUT = 15;
 
 	/**
-	 * Entorno activo, en cascada:
-	 *   1) constante VIO_WC_SYNC_ENV en wp-config.php
-	 *   2) opción guardada en ajustes
+	 * Active environment, resolved in cascade:
+	 *   1) VIO_WC_SYNC_ENV constant in wp-config.php
+	 *   2) the option saved in settings
 	 *   3) default (production)
 	 */
 	public static function environment(): string {
@@ -52,7 +52,7 @@ final class Api_Client {
 	public static function base_url(): string {
 		$env = self::environment();
 
-		// 1) Constante específica por entorno en wp-config.php (override sin tocar código).
+		// 1) Per-environment constant in wp-config.php (override without touching code).
 		$constant = 'VIO_WC_SYNC_API_URL_' . strtoupper( $env );
 		if ( defined( $constant ) && '' !== (string) constant( $constant ) ) {
 			$base = (string) constant( $constant );
@@ -60,7 +60,7 @@ final class Api_Client {
 			$base = self::ENVIRONMENTS[ $env ] ?? self::ENVIRONMENTS[ self::DEFAULT_ENVIRONMENT ];
 		}
 
-		// 2) Filtro de override total (p. ej. local/ngrok o un dominio nuevo).
+		// 2) Full override filter (e.g. local/ngrok or a brand-new domain).
 		return untrailingslashit( (string) apply_filters( 'vio_wc_sync_api_base', $base, $env ) );
 	}
 
@@ -73,12 +73,12 @@ final class Api_Client {
 	}
 
 	/**
-	 * Llamada genérica a la API.
+	 * Generic API call.
 	 *
-	 * @param string     $endpoint Path con barra inicial, p. ej. '/api/products'.
-	 * @param string     $method   Verbo HTTP.
-	 * @param array|null $body     Cuerpo a serializar como JSON.
-	 * @return mixed Cuerpo decodificado, o \WP_Error en caso de fallo.
+	 * @param string     $endpoint Path with a leading slash, e.g. '/api/products'.
+	 * @param string     $method   HTTP verb.
+	 * @param array|null $body     Payload to serialize as JSON.
+	 * @return mixed Decoded body, or \WP_Error on failure.
 	 */
 	public static function request( string $endpoint, string $method = 'GET', ?array $body = null ) {
 		$url = self::base_url() . $endpoint;
@@ -116,7 +116,7 @@ final class Api_Client {
 	}
 
 	// --- Endpoints --------------------------------------------------------
-	// Paths compartidos con la plataforma Reachu; se mantienen iguales para Vio.
+	// Paths shared with the Reachu platform; kept identical for Vio.
 
 	public static function get_current_user() {
 		return self::request( '/catalog/users/me' );
@@ -156,7 +156,7 @@ final class Api_Client {
 	}
 
 	/**
-	 * URL de autorización OAuth de WooCommerce con callback hacia Vio.
+	 * WooCommerce OAuth authorization URL with a callback to Vio.
 	 */
 	public static function authorization_url( int $user_id ): string {
 		$current_path = isset( $_SERVER['REQUEST_URI'] )

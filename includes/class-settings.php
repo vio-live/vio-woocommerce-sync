@@ -1,6 +1,6 @@
 <?php
 /**
- * Pestaña de ajustes de Vio en WooCommerce → Ajustes.
+ * Vio settings tab under WooCommerce → Settings.
  *
  * @package Vio\WooSync
  */
@@ -47,7 +47,7 @@ final class Settings {
 	}
 
 	/**
-	 * Definición de campos (API de settings de WooCommerce).
+	 * Field definition (WooCommerce settings API).
 	 *
 	 * @return array<string,array<string,mixed>>
 	 */
@@ -58,7 +58,7 @@ final class Settings {
 				'section_title' => [
 					'name' => __( 'Vio WooCommerce Sync', 'vio-woocommerce-sync' ),
 					'type' => 'title',
-					'desc' => __( 'Conecta tu tienda con Vio y sincroniza tu catálogo.', 'vio-woocommerce-sync' ),
+					'desc' => __( 'Connect your store with Vio and sync your catalog.', 'vio-woocommerce-sync' ),
 					'id'   => 'vio_section',
 				],
 				'apikey'        => [
@@ -67,18 +67,18 @@ final class Settings {
 					'id'   => Plugin::OPT_API_KEY,
 				],
 				'environment'   => [
-					'name'    => __( 'Entorno', 'vio-woocommerce-sync' ),
+					'name'    => __( 'Environment', 'vio-woocommerce-sync' ),
 					'type'    => 'select',
 					'id'      => Plugin::OPT_ENVIRONMENT,
 					'default' => Api_Client::DEFAULT_ENVIRONMENT,
-					'desc'    => __( 'Entorno de la API de Vio. Se puede forzar con la constante VIO_WC_SYNC_ENV en wp-config.php.', 'vio-woocommerce-sync' ),
+					'desc'    => __( 'Vio API environment. Can be forced with the VIO_WC_SYNC_ENV constant in wp-config.php.', 'vio-woocommerce-sync' ),
 					'options' => [
-						'production' => __( 'Producción', 'vio-woocommerce-sync' ),
+						'production' => __( 'Production', 'vio-woocommerce-sync' ),
 						'staging'    => __( 'Staging', 'vio-woocommerce-sync' ),
 					],
 				],
 				'currency'      => [
-					'name'    => __( 'Moneda', 'vio-woocommerce-sync' ),
+					'name'    => __( 'Currency', 'vio-woocommerce-sync' ),
 					'type'    => 'select',
 					'id'      => Plugin::OPT_CURRENCY,
 					'default' => '',
@@ -122,15 +122,15 @@ final class Settings {
 		$user = Api_Client::get_current_user();
 		if ( is_wp_error( $user ) || ! isset( $user->id ) ) {
 			woocommerce_admin_fields( self::get_settings() );
-			echo '<p class="vio-error">' . esc_html__( 'La API Key no es válida.', 'vio-woocommerce-sync' ) . '</p>';
+			echo '<p class="vio-error">' . esc_html__( 'The API Key is not valid.', 'vio-woocommerce-sync' ) . '</p>';
 			return;
 		}
 
-		// Con API key válida pero sin webhook → falta conectar vía OAuth.
+		// Valid API key but no webhook yet → the store still needs to connect via OAuth.
 		if ( ! self::webhook_exists() ) {
 			$auth_url = Api_Client::authorization_url( (int) $user->id );
 			echo '<p class="vio-connect"><a class="button button-primary" href="' . esc_url( $auth_url ) . '">'
-				. esc_html__( 'Conectar tienda', 'vio-woocommerce-sync' ) . '</a></p>';
+				. esc_html__( 'Connect store', 'vio-woocommerce-sync' ) . '</a></p>';
 			return;
 		}
 
@@ -141,22 +141,22 @@ final class Settings {
 		$currency   = (string) get_option( Plugin::OPT_CURRENCY );
 		$logout_url = wp_nonce_url( admin_url( 'admin-ajax.php?action=vio_logout' ), 'vio_logout' );
 
-		echo '<h2>' . esc_html__( 'Tu tienda está conectada', 'vio-woocommerce-sync' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Your store is connected', 'vio-woocommerce-sync' ) . '</h2>';
 		echo '<p class="vio-account">'
-			. esc_html( sprintf( /* translators: %s: nombre de usuario */ __( 'Conectado como %s', 'vio-woocommerce-sync' ), $user->username ?? '' ) )
+			. esc_html( sprintf( /* translators: %s: username */ __( 'Connected as %s', 'vio-woocommerce-sync' ), $user->username ?? '' ) )
 			. ( '' !== $currency ? ' · ' . esc_html( $currency ) : '' )
 			. '</p>';
 		echo '<p><a id="sync-all-button" class="button button-primary" href="' . esc_url( admin_url( 'edit.php?post_type=product' ) ) . '">'
-			. esc_html__( 'Ir a productos', 'vio-woocommerce-sync' ) . '</a> '
-			. '<a class="button" href="' . esc_url( $logout_url ) . '">' . esc_html__( 'Desconectar', 'vio-woocommerce-sync' ) . '</a></p>';
+			. esc_html__( 'Go to products', 'vio-woocommerce-sync' ) . '</a> '
+			. '<a class="button" href="' . esc_url( $logout_url ) . '">' . esc_html__( 'Disconnect', 'vio-woocommerce-sync' ) . '</a></p>';
 	}
 
 	private static function render_signup(): void {
-		// @TODO URL real de registro de Vio.
+		// @TODO Real Vio sign-up URL.
 		$signup = (string) apply_filters( 'vio_wc_sync_signup_url', 'https://reachu.io/' );
-		echo '<p class="vio-signup">' . esc_html__( '¿Aún no tienes cuenta?', 'vio-woocommerce-sync' )
+		echo '<p class="vio-signup">' . esc_html__( "Don't have an account yet?", 'vio-woocommerce-sync' )
 			. ' <a href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">'
-			. esc_html__( 'Crear cuenta', 'vio-woocommerce-sync' ) . '</a></p>';
+			. esc_html__( 'Sign up', 'vio-woocommerce-sync' ) . '</a></p>';
 	}
 
 	private static function webhook_exists(): bool {

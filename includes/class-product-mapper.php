@@ -1,7 +1,7 @@
 <?php
 /**
- * Convierte productos de WooCommerce al DTO de Vio y calcula los cambios
- * (diff) entre el estado de WooCommerce y el de Vio antes de actualizar.
+ * Maps WooCommerce products to the Vio DTO and computes the changes (diff)
+ * between the WooCommerce state and the Vio state before updating.
  *
  * @package Vio\WooSync
  */
@@ -18,7 +18,7 @@ final class Product_Mapper {
 	private const FLOAT_TOLERANCE = 0.01;
 
 	/**
-	 * Fuerza https en una URL de imagen.
+	 * Force https on an image URL.
 	 */
 	public static function force_secure_image( string $image_url ): string {
 		if ( 'https' !== wp_parse_url( $image_url, PHP_URL_SCHEME ) ) {
@@ -28,8 +28,7 @@ final class Product_Mapper {
 	}
 
 	/**
-	 * Devuelve el id de producto en Vio asociado a un post de WooCommerce,
-	 * para una API key concreta.
+	 * Return the Vio product id linked to a WooCommerce post, for a given API key.
 	 */
 	public static function get_remote_product_id( string $user_api_key, int $post_id ): ?string {
 		$field = get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true );
@@ -47,7 +46,7 @@ final class Product_Mapper {
 	}
 
 	/**
-	 * Construye el DTO de un producto de WooCommerce para enviar a Vio.
+	 * Build the DTO of a WooCommerce product to send to Vio.
 	 *
 	 * @return array<string,mixed>
 	 */
@@ -231,10 +230,10 @@ final class Product_Mapper {
 	// --- Diffing ----------------------------------------------------------
 
 	/**
-	 * Calcula los campos que cambiaron entre el estado WooCommerce y el de Vio.
+	 * Compute the fields that changed between the WooCommerce state and Vio's.
 	 *
-	 * @param array $current Estado actual (WooCommerce).
-	 * @param mixed $initial Estado en Vio (objeto/array).
+	 * @param array $current Current state (WooCommerce).
+	 * @param mixed $initial Vio state (object/array).
 	 * @return array<string,mixed>
 	 */
 	public static function diff( array $current, $initial ): array {
@@ -296,7 +295,7 @@ final class Product_Mapper {
 			}
 		}
 
-		// Normaliza la clave de imagen en variantes (image → url).
+		// Normalize the image key in variants (image → url).
 		if ( isset( $changes['variants'] ) ) {
 			foreach ( $changes['variants'] as &$variant ) {
 				if ( ! empty( $variant['images'] ) && is_array( $variant['images'] ) ) {
@@ -449,7 +448,7 @@ final class Product_Mapper {
 
 		$changed = array_keys( array_filter( $checks ) );
 		if ( $changed ) {
-			Logger::info( 'Variante cambió por: ' . implode( ', ', $changed ) );
+			Logger::info( 'Variant changed due to: ' . implode( ', ', $changed ) );
 			return true;
 		}
 		return false;

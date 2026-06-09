@@ -1,7 +1,7 @@
 <?php
 /**
- * Integración con la lista de productos: columna de estado, bulk actions y
- * auto-sync al guardar / enviar a papelera / borrar productos.
+ * Product-list integration: status column, bulk actions and auto-sync on
+ * save / trash / delete.
  *
  * @package Vio\WooSync
  */
@@ -70,16 +70,16 @@ final class Products_Table {
 			printf(
 				'<img class="vio-icon" src="%s" alt="%s" width="20" />',
 				esc_url( VIO_WC_SYNC_URL . 'assets/img/icon.svg' ),
-				esc_attr__( 'Sincronizado con Vio', 'vio-woocommerce-sync' )
+				esc_attr__( 'Synced with Vio', 'vio-woocommerce-sync' )
 			);
 		} elseif ( $sqs_id ) {
-			echo '<span class="vio-syncing">' . esc_html__( 'Sincronizando…', 'vio-woocommerce-sync' ) . '</span>';
+			echo '<span class="vio-syncing">' . esc_html__( 'Syncing…', 'vio-woocommerce-sync' ) . '</span>';
 		}
 	}
 
 	public static function add_bulk_actions( array $actions ): array {
 		$actions['vio_sync']   = __( 'Vio Sync', 'vio-woocommerce-sync' );
-		$actions['vio_delete'] = __( 'Eliminar de Vio', 'vio-woocommerce-sync' );
+		$actions['vio_delete'] = __( 'Delete from Vio', 'vio-woocommerce-sync' );
 		return $actions;
 	}
 
@@ -88,7 +88,7 @@ final class Products_Table {
 	}
 
 	/**
-	 * Auto-sync al crear/actualizar un producto.
+	 * Auto-sync on product create/update.
 	 *
 	 * @param int|string $post_id
 	 */
@@ -99,7 +99,7 @@ final class Products_Table {
 			return;
 		}
 
-		// Evita disparos duplicados dentro de la misma petición.
+		// Avoid duplicate triggers within the same request.
 		$transient = 'vio_updating_' . $post_id;
 		if ( false !== get_transient( $transient ) ) {
 			return;

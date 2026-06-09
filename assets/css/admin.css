@@ -1,6 +1,6 @@
-/* ====== Vio WooCommerce Sync — estilos de administración ====== */
+/* ====== Vio WooCommerce Sync — admin styles ====== */
 
-/* Columna de estado en la lista de productos */
+/* Sync-status column in the product list */
 .vio-icon {
 	display: block;
 	margin: 0 auto;
@@ -17,7 +17,7 @@
 	font-style: italic;
 }
 
-/* Mensajes en la pestaña de ajustes */
+/* Messages in the settings tab */
 .vio-error {
 	color: #b32d2e;
 	font-weight: 600;
@@ -27,7 +27,7 @@
 	margin: 0.5em 0 1em;
 }
 
-/* ====== Modal de progreso del bulk action ====== */
+/* ====== Bulk-action progress modal ====== */
 .vio-progress {
 	position: fixed;
 	inset: 0;
@@ -89,7 +89,7 @@
 	margin: 0;
 }
 
-/* ====== Selector de moneda personalizado (opcional) ====== */
+/* ====== Custom currency selector (optional) ====== */
 .vio-select__wrap {
 	width: 225px;
 	margin: 15px auto;

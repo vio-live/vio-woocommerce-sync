@@ -1,6 +1,6 @@
 <?php
 /**
- * Orquestador del plugin: constantes centrales, arranque y ciclo de vida.
+ * Plugin orchestrator: central constants, bootstrap and lifecycle.
  *
  * @package Vio\WooSync
  */
@@ -16,10 +16,10 @@ final class Plugin {
 	public const TEXT_DOMAIN = 'vio-woocommerce-sync';
 	public const LOG_SOURCE   = 'vio-woocommerce-sync';
 
-	/** Capability requerida para todas las operaciones de sincronización. */
+	/** Capability required for every sync operation. */
 	public const CAPABILITY = 'manage_woocommerce';
 
-	// --- Opciones en base de datos ---------------------------------------
+	// --- Database options -------------------------------------------------
 	public const OPT_API_KEY     = 'vio_apikey';
 	public const OPT_CURRENCY    = 'vio_currency';
 	public const OPT_ENVIRONMENT = 'vio_environment';
@@ -31,14 +31,14 @@ final class Plugin {
 	public const META_SQS_ID     = 'vio-sqs-id';
 	public const META_ORIGIN     = 'vio-origin';
 
-	/** Nombres de los webhooks de órdenes gestionados por Vio. */
+	/** Names of the order webhooks managed by Vio. */
 	public const WEBHOOK_NAMES = [ 'Vio order.created', 'Vio order.updated' ];
 
-	/** Texto identificador de las API keys REST creadas para Vio. */
+	/** Identifier text for the REST API keys created for Vio. */
 	public const API_KEY_DESCRIPTION = 'Vio WooCommerce Sync';
 
 	/**
-	 * Arranque: se ejecuta en plugins_loaded.
+	 * Bootstrap: runs on plugins_loaded.
 	 */
 	public static function init(): void {
 		if ( ! class_exists( 'WooCommerce' ) ) {
@@ -60,11 +60,11 @@ final class Plugin {
 	public static function woocommerce_missing_notice(): void {
 		printf(
 			'<div class="notice notice-error"><p>%s</p></div>',
-			esc_html__( 'Vio WooCommerce Sync requiere que WooCommerce esté instalado y activo.', 'vio-woocommerce-sync' )
+			esc_html__( 'Vio WooCommerce Sync requires WooCommerce to be installed and active.', 'vio-woocommerce-sync' )
 		);
 	}
 
-	// --- Ciclo de vida ----------------------------------------------------
+	// --- Lifecycle --------------------------------------------------------
 
 	public static function activate(): void {
 		add_option( self::OPT_CURRENCY, '' );
@@ -81,7 +81,7 @@ final class Plugin {
 	}
 
 	/**
-	 * Limpieza al desconectar/desactivar: elimina webhooks y API keys de Vio.
+	 * Cleanup on disconnect/deactivate: removes Vio webhooks and REST API keys.
 	 */
 	public static function cleanup(): void {
 		self::remove_webhooks();
@@ -94,7 +94,7 @@ final class Plugin {
 			$webhook = wc_get_webhook( $webhook_id );
 			if ( $webhook && in_array( $webhook->get_name(), self::WEBHOOK_NAMES, true ) ) {
 				$webhook->delete( true );
-				Logger::info( 'Webhook eliminado: ' . $webhook->get_name() );
+				Logger::info( 'Webhook removed: ' . $webhook->get_name() );
 			}
 		}
 	}
@@ -112,7 +112,7 @@ final class Plugin {
 
 		foreach ( $rows as $row ) {
 			$wpdb->delete( $table, [ 'key_id' => $row->key_id ], [ '%d' ] );
-			Logger::info( 'API key REST eliminada: ' . $row->key_id );
+			Logger::info( 'REST API key removed: ' . $row->key_id );
 		}
 	}
 }

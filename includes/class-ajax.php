@@ -1,7 +1,7 @@
 <?php
 /**
- * Acciones AJAX. Todas requieren usuario autenticado con capability y nonce
- * (no se registran variantes `nopriv`).
+ * AJAX actions. All require an authenticated user with capability + nonce
+ * (no `nopriv` variants are registered).
  *
  * @package Vio\WooSync
  */
@@ -22,7 +22,7 @@ final class Ajax {
 		add_action( 'wp_ajax_vio_logout', [ self::class, 'logout' ] );
 	}
 
-	/** Verifica capability; corta con 403 si no la tiene. */
+	/** Checks capability; bails with 403 if the user lacks it. */
 	private static function guard(): void {
 		if ( ! current_user_can( Plugin::CAPABILITY ) ) {
 			wp_send_json_error( [ 'message' => 'forbidden' ], 403 );
@@ -78,7 +78,7 @@ final class Ajax {
 		check_ajax_referer( 'vio_sync', 'nonce' );
 		self::guard();
 
-		Logger::info( '[finish_sync] notificando fin de primer sync' );
+		Logger::info( '[finish_sync] notifying first-sync completion' );
 		Api_Client::finish_sync();
 		wp_send_json_success();
 	}
@@ -101,7 +101,7 @@ final class Ajax {
 		update_option( Plugin::OPT_CURRENCY, '' );
 		Plugin::cleanup();
 
-		Logger::info( '[logout] tienda desconectada de Vio' );
+		Logger::info( '[logout] store disconnected from Vio' );
 		wp_safe_redirect( admin_url( 'admin.php?page=wc-settings&tab=' . Settings::TAB_ID ) );
 		exit;
 	}

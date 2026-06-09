@@ -2,7 +2,7 @@
 /**
  * Plugin Name:          Vio WooCommerce Sync
  * Plugin URI:           https://reachu.io/
- * Description:          Sincroniza productos de WooCommerce con la plataforma Vio (inventario, precios, variantes e imágenes).
+ * Description:          Sync WooCommerce products to the Vio platform (inventory, prices, variants and images).
  * Version:              1.0.0
  * Requires at least:    6.0
  * Requires PHP:         8.0
@@ -29,7 +29,7 @@ define( 'VIO_WC_SYNC_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VIO_WC_SYNC_URL', plugin_dir_url( __FILE__ ) );
 define( 'VIO_WC_SYNC_BASENAME', plugin_basename( __FILE__ ) );
 
-// Carga de clases (sin Composer: requires explícitos en orden de dependencia).
+// Class loading (no Composer: explicit requires in dependency order).
 require_once VIO_WC_SYNC_DIR . 'includes/class-logger.php';
 require_once VIO_WC_SYNC_DIR . 'includes/class-api-client.php';
 require_once VIO_WC_SYNC_DIR . 'includes/class-product-mapper.php';
@@ -39,7 +39,7 @@ require_once VIO_WC_SYNC_DIR . 'includes/class-products-table.php';
 require_once VIO_WC_SYNC_DIR . 'includes/class-ajax.php';
 require_once VIO_WC_SYNC_DIR . 'includes/class-plugin.php';
 
-// Declarar compatibilidad con HPOS (High-Performance Order Storage).
+// Declare HPOS (High-Performance Order Storage) compatibility.
 add_action(
 	'before_woocommerce_init',
 	static function (): void {
@@ -53,9 +53,9 @@ add_action(
 	}
 );
 
-// Arranque del plugin.
+// Plugin bootstrap.
 add_action( 'plugins_loaded', [ \Vio\WooSync\Plugin::class, 'init' ] );
 
-// Ciclo de vida.
+// Lifecycle.
 register_activation_hook( __FILE__, [ \Vio\WooSync\Plugin::class, 'activate' ] );
 register_deactivation_hook( __FILE__, [ \Vio\WooSync\Plugin::class, 'deactivate' ] );

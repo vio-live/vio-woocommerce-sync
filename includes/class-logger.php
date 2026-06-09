@@ -1,6 +1,6 @@
 <?php
 /**
- * Logger del plugin (wrapper del logger de WooCommerce).
+ * Plugin logger (wrapper around the WooCommerce logger).
  *
  * @package Vio\WooSync
  */
