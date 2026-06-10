@@ -20,6 +20,12 @@ final class Ajax {
 		add_action( 'wp_ajax_vio_finish_sync', [ self::class, 'finish_sync' ] );
 		add_action( 'wp_ajax_vio_save_settings', [ self::class, 'save_settings' ] );
 		add_action( 'wp_ajax_vio_logout', [ self::class, 'logout' ] );
+		add_action( 'wp_ajax_vio_save_config', [ self::class, 'save_config' ] );
+		add_action( 'wp_ajax_vio_health', [ self::class, 'health' ] );
+		add_action( 'wp_ajax_vio_stats', [ self::class, 'stats' ] );
+		add_action( 'wp_ajax_vio_pending_ids', [ self::class, 'pending_ids' ] );
+		add_action( 'wp_ajax_vio_logs', [ self::class, 'logs' ] );
+		add_action( 'wp_ajax_vio_connect', [ self::class, 'connect' ] );
 	}
 
 	/** Checks capability; bails with 403 if the user lacks it. */
@@ -99,16 +105,92 @@ final class Ajax {
 		wp_send_json_success();
 	}
 
+	public static function save_config(): void {
+		check_ajax_referer( 'vio_sync', 'nonce' );
+		self::guard();
+
+		$apikey   = isset( $_POST['apikey'] ) ? sanitize_text_field( wp_unslash( $_POST['apikey'] ) ) : '';
+		$env      = isset( $_POST['environment'] ) ? sanitize_key( wp_unslash( $_POST['environment'] ) ) : '';
+		$currency = isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( $_POST['currency'] ) ) : '';
+
+		Store_Status::save_options( $apikey, $env, $currency );
+
+		Logger::info( '[save_config] settings saved' );
+		wp_send_json_success();
+	}
+
+	/**
+	 * One-step connect: save the settings, validate the key, and hand back the
+	 * WooCommerce OAuth authorize URL for the browser to follow. On an invalid
+	 * key, return the same status-aware message the page shows.
+	 */
+	public static function connect(): void {
+		check_ajax_referer( 'vio_sync', 'nonce' );
+		self::guard();
+
+		$apikey   = isset( $_POST['apikey'] ) ? sanitize_text_field( wp_unslash( $_POST['apikey'] ) ) : '';
+		$env      = isset( $_POST['environment'] ) ? sanitize_key( wp_unslash( $_POST['environment'] ) ) : '';
+		$currency = isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( $_POST['currency'] ) ) : '';
+
+		Store_Status::save_options( $apikey, $env, $currency );
+
+		$user = Api_Client::get_current_user();
+		if ( is_wp_error( $user ) || ! is_object( $user ) || ! isset( $user->id ) ) {
+			$data    = is_wp_error( $user ) ? $user->get_error_data() : array();
+			$status  = ( is_array( $data ) && ! empty( $data['status'] ) ) ? (int) $data['status'] : 0;
+			$message = Store_Status::connection_message( array( 'has_key' => '' !== $apikey, 'valid' => false, 'status' => $status ) );
+			Logger::error( '[connect] key rejected (HTTP ' . $status . ')' );
+			wp_send_json_error( array( 'message' => $message, 'status' => $status ) );
+		}
+
+		Logger::info( '[connect] key valid, handing OAuth authorize URL' );
+		wp_send_json_success( array( 'authUrl' => Api_Client::authorization_url( (int) $user->id ) ) );
+	}
+
+	public static function health(): void {
+		check_ajax_referer( 'vio_sync', 'nonce' );
+		self::guard();
+		wp_send_json_success( Store_Status::health_payload() );
+	}
+
+	public static function stats(): void {
+		check_ajax_referer( 'vio_sync', 'nonce' );
+		self::guard();
+		wp_send_json_success( Store_Status::stats() );
+	}
+
+	public static function pending_ids(): void {
+		check_ajax_referer( 'vio_sync', 'nonce' );
+		self::guard();
+		wp_send_json_success( [ 'ids' => Store_Status::pending_product_ids() ] );
+	}
+
+	public static function logs(): void {
+		check_ajax_referer( 'vio_sync', 'nonce' );
+		self::guard();
+		wp_send_json_success( [ 'lines' => Logger::recent( 120 ) ] );
+	}
+
 	public static function logout(): void {
 		check_admin_referer( 'vio_logout' );
 		self::guard();
+
+		// Tear down the backend connection too, while the key is still valid:
+		// resolve this store's credential + ecom-user ids, then delete it.
+		// Best-effort — the local cleanup runs regardless, so disconnect always
+		// succeeds locally.
+		$conn = Api_Client::find_woo_connection();
+		if ( $conn ) {
+			Api_Client::delete_api_credential( $conn['credential_id'], $conn['ecom_user_id'] );
+			Logger::info( '[logout] backend credential ' . $conn['credential_id'] . ' deleted (ecomUser ' . $conn['ecom_user_id'] . ')' );
+		}
 
 		update_option( Plugin::OPT_API_KEY, '' );
 		update_option( Plugin::OPT_CURRENCY, '' );
 		Plugin::cleanup();
 
 		Logger::info( '[logout] store disconnected from Vio' );
-		wp_safe_redirect( admin_url( 'admin.php?page=wc-settings&tab=' . Settings::TAB_ID ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=' . Config_Page::MENU_SLUG . '&vio_disconnected=1' ) );
 		exit;
 	}
 }

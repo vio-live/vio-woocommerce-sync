@@ -1,0 +1,336 @@
+/* ============================================================
+   Vio WooCommerce Sync — configuration page
+   Light mode only (WooCommerce admin has no dark theme).
+   Palette: greys + Vio green. No blue, no amber.
+   ============================================================ */
+
+.vio-config {
+	--vio-green: #2f7d5f;
+	--vio-green-dark: #276b51;
+	--vio-green-tint: #eaf3ee;
+	--vio-ink: #1d2327;
+	--vio-muted: #646970;
+	--vio-line: #e3e5e8;
+	--vio-surface: #f6f7f7;
+	--vio-danger: #b32d2e;
+	max-width: 1080px;
+	margin-right: 20px;
+}
+
+/* ---- Outline icons (Feather, stroke = currentColor) ---- */
+.vio-ico {
+	display: inline-block;
+	width: 18px;
+	height: 18px;
+	vertical-align: middle;
+	flex-shrink: 0;
+}
+
+/* ---- Header ---- */
+.vio-config__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin: 4px 0 20px;
+}
+
+.vio-config__brand { display: flex; align-items: center; gap: 12px; }
+.vio-config__logo { display: block; border-radius: 7px; }
+.vio-config__wordmark { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; color: var(--vio-ink); }
+.vio-config__sep { width: 1px; height: 20px; background: var(--vio-line); }
+.vio-config__subtitle { font-size: 15px; color: var(--vio-muted); }
+
+/* ---- Status badge ---- */
+.vio-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 13px;
+	font-weight: 500;
+	padding: 6px 13px;
+	border-radius: 999px;
+	border: 1px solid var(--vio-line);
+	background: #fff;
+}
+
+.vio-badge .vio-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.vio-badge--ok { color: var(--vio-green); border-color: #cfe6db; }
+.vio-badge--warn { color: var(--vio-muted); border-color: var(--vio-line); }
+.vio-badge--idle { color: var(--vio-muted); }
+.vio-badge--ok .vio-dot { animation: vio-pulse 2s ease-in-out infinite; }
+
+/* ---- Grid ---- */
+.vio-config__grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	align-items: start;
+}
+
+.vio-card--sync,
+.vio-card--logs { grid-column: 1 / -1; }
+
+@media (max-width: 782px) {
+	.vio-config__grid { grid-template-columns: 1fr; }
+}
+
+/* ---- Card ---- */
+.vio-card {
+	background: #fff;
+	border: 1px solid var(--vio-line);
+	border-radius: 12px;
+	padding: 20px 22px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	transition: box-shadow 0.18s ease;
+	animation: vio-rise 0.35s ease both;
+}
+
+.vio-card:hover { box-shadow: 0 3px 14px rgba(0, 0, 0, 0.07); }
+.vio-card--connection { animation-delay: 0.02s; }
+.vio-card--settings { animation-delay: 0.06s; }
+.vio-card--sync { animation-delay: 0.10s; }
+.vio-card--logs { animation-delay: 0.14s; }
+
+.vio-card__title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 14px;
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--vio-ink);
+}
+
+.vio-card__title .vio-ico { color: var(--vio-muted); }
+
+.vio-card__headrow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 14px;
+}
+
+.vio-card__headrow .vio-card__title { margin: 0; }
+.vio-card__note { margin: 12px 0 0; font-size: 13px; }
+
+/* ---- Key/value list ---- */
+.vio-kv { margin: 0; }
+
+.vio-kv__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 9px 0;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 13px;
+}
+
+.vio-kv__row:last-child { border-bottom: 0; }
+.vio-kv__row dt { color: var(--vio-muted); margin: 0; }
+.vio-kv__row dd { margin: 0; font-weight: 500; color: var(--vio-ink); }
+.vio-kv__row code { background: var(--vio-surface); padding: 2px 7px; border-radius: 5px; font-size: 12px; }
+
+.vio-ok { display: inline-flex; align-items: center; gap: 6px; color: var(--vio-green); }
+.vio-ok .vio-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.vio-bad { color: var(--vio-danger); }
+.vio-muted { color: var(--vio-muted); font-size: 13px; }
+
+/* ---- Notices ---- */
+.vio-conn-notice:not(:empty) { margin: 0 0 14px; }
+.vio-config__alert { margin: 0 0 16px; }
+.vio-notice { font-size: 13px; line-height: 1.5; padding: 10px 13px; border-radius: 8px; }
+.vio-notice--error { background: #fbeaea; color: var(--vio-danger); border: 1px solid #e6c4c4; }
+.vio-notice--ok { background: var(--vio-green-tint); color: var(--vio-green-dark); border: 1px solid #cfe6db; }
+
+/* ---- Actions / buttons ---- */
+.vio-card__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+.vio-config .vio-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: auto;
+	min-height: 34px;
+	padding: 6px 14px;
+	border-radius: 8px;
+	font-weight: 500;
+	line-height: 1.2;
+	transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.vio-config .vio-btn .vio-ico { width: 16px; height: 16px; }
+.vio-config .vio-btn:active { transform: scale(0.97); }
+.vio-config .vio-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.vio-config .vio-btn--primary {
+	background: var(--vio-green);
+	border-color: var(--vio-green);
+	color: #fff;
+	text-shadow: none;
+	box-shadow: none;
+}
+
+.vio-config .vio-btn--primary:hover:not(:disabled) { background: var(--vio-green-dark); border-color: var(--vio-green-dark); color: #fff; }
+
+.vio-config .vio-btn--danger { background: #fff; border-color: #d9b3b3; color: var(--vio-danger); }
+.vio-config .vio-btn--danger:hover { background: #fbeaea; border-color: var(--vio-danger); }
+
+/* ---- Form ---- */
+.vio-form { display: flex; flex-direction: column; gap: 16px; max-width: 460px; }
+.vio-field { display: flex; flex-direction: column; gap: 6px; }
+.vio-field__label { font-size: 13px; font-weight: 500; color: var(--vio-ink); }
+.vio-field__control { position: relative; }
+
+.vio-config .vio-field input[type="password"],
+.vio-config .vio-field input[type="text"],
+.vio-config .vio-field select {
+	width: 100%;
+	max-width: 360px;
+	height: 38px;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+	padding: 0 12px;
+	box-shadow: none;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vio-config .vio-field input:focus,
+.vio-config .vio-field select:focus {
+	border-color: var(--vio-green);
+	box-shadow: 0 0 0 3px rgba(47, 125, 95, 0.15);
+	outline: none;
+}
+
+.vio-field__control--key { max-width: 360px; }
+
+.vio-reveal {
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 38px;
+	width: 38px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	background: transparent;
+	color: var(--vio-muted);
+	cursor: pointer;
+	transition: color 0.15s ease;
+}
+
+.vio-reveal:hover { color: var(--vio-green); }
+.vio-reveal .vio-ico--eye-off { display: none; }
+.vio-reveal.is-revealed .vio-ico--eye { display: none; }
+.vio-reveal.is-revealed .vio-ico--eye-off { display: inline-block; }
+.vio-hint { font-size: 12px; color: var(--vio-muted); }
+
+.vio-save-feedback { font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.2s ease; }
+.vio-save-feedback.is-visible { opacity: 1; }
+.vio-save-feedback.is-ok { color: var(--vio-green); }
+.vio-save-feedback.is-err { color: var(--vio-danger); }
+
+/* ---- Spinner ---- */
+.vio-spinner {
+	display: none;
+	width: 14px;
+	height: 14px;
+	border: 2px solid rgba(255, 255, 255, 0.45);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: vio-spin 0.6s linear infinite;
+	vertical-align: middle;
+}
+
+/* Loaders toggle by .is-loading (never by [hidden], which a display rule would
+   override). The outline icon swaps out for the spinner. */
+.vio-config .vio-btn.is-loading .vio-spinner { display: inline-block; }
+.vio-config .vio-btn.is-loading .vio-ico { display: none; }
+
+.vio-btn:not(.vio-btn--primary) .vio-spinner {
+	border-color: rgba(47, 125, 95, 0.3);
+	border-top-color: var(--vio-green);
+}
+
+/* ---- Metrics ---- */
+.vio-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+
+.vio-metric { background: var(--vio-surface); border-radius: 10px; padding: 16px; transition: transform 0.15s ease; }
+.vio-metric:hover { transform: translateY(-2px); }
+.vio-metric__label { display: block; font-size: 13px; color: var(--vio-muted); margin-bottom: 6px; }
+.vio-metric__value { font-size: 26px; font-weight: 600; color: var(--vio-ink); display: inline-block; }
+
+.vio-metric--synced .vio-metric__value { color: var(--vio-green); }
+.vio-metric--sent .vio-metric__value { color: var(--vio-muted); }
+.vio-metric__value.is-bump { animation: vio-bump 0.45s ease; }
+
+/* ---- Inline progress (sync all) ---- */
+.vio-progress-inline { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.vio-progress-inline__bar { flex: 1; height: 6px; background: #e9eaec; border-radius: 999px; overflow: hidden; }
+.vio-progress-inline__bar span { display: block; height: 100%; width: 0; background: var(--vio-green); border-radius: 999px; transition: width 0.3s ease; }
+.vio-progress-inline__text { font-size: 12px; color: var(--vio-muted); min-width: 54px; text-align: right; }
+
+/* ---- Note ---- */
+.vio-note {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 14px 0 0;
+	padding: 10px 13px;
+	background: var(--vio-surface);
+	border-radius: 8px;
+	font-size: 13px;
+	color: var(--vio-muted);
+}
+
+.vio-note .vio-ico { color: var(--vio-muted); width: 16px; height: 16px; }
+
+/* ---- Logs (collapsible, full width) ---- */
+.vio-logs__toggle { cursor: pointer; user-select: none; margin-bottom: 0; }
+.vio-logs__toggle:focus-visible { outline: 2px solid var(--vio-green); outline-offset: 3px; border-radius: 6px; }
+.vio-logs__chev { color: var(--vio-muted); display: inline-flex; transition: transform 0.2s ease; }
+.vio-card--logs.is-open .vio-logs__chev { transform: rotate(180deg); }
+
+.vio-logs__body { display: none; margin-top: 14px; }
+.vio-card--logs.is-open .vio-logs__body { display: block; animation: vio-rise 0.25s ease both; }
+
+.vio-logs__toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.vio-logs__source { margin-left: auto; font-size: 12px; color: var(--vio-muted); font-family: monospace; }
+
+.vio-logs__pre {
+	margin: 0;
+	max-height: 320px;
+	overflow: auto;
+	background: #2c2c2a;
+	color: #e3e3e0;
+	border-radius: 8px;
+	padding: 14px 16px;
+	font-size: 12px;
+	line-height: 1.75;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.vio-logs__pre .vio-muted { color: #9a9a96; }
+.vio-log-line { display: block; }
+.vio-log-line--error { color: #f0a8a8; }
+
+/* ---- Animations ---- */
+@keyframes vio-spin { to { transform: rotate(360deg); } }
+@keyframes vio-rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+@keyframes vio-bump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes vio-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+@media (prefers-reduced-motion: reduce) {
+	.vio-card,
+	.vio-badge--ok .vio-dot,
+	.vio-metric__value.is-bump,
+	.vio-spinner { animation: none; }
+	.vio-card,
+	.vio-metric { transition: none; }
+}

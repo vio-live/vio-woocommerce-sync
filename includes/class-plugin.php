@@ -52,7 +52,7 @@ final class Plugin {
 			dirname( VIO_WC_SYNC_BASENAME ) . '/languages'
 		);
 
-		Settings::init();
+		Config_Page::init();
 		Products_Table::init();
 		Ajax::init();
 	}

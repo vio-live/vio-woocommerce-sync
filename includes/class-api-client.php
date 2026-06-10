@@ -33,6 +33,19 @@ final class Api_Client {
 
 	private const TIMEOUT = 15;
 
+	// --- API endpoints ----------------------------------------------------
+	// Every backend path the plugin calls lives here. To change or add one,
+	// edit this block — the methods below only reference these constants.
+	private const EP_CURRENT_USER   = '/catalog/users/me';                            // GET    — whoami / health
+	private const EP_CURRENCIES     = '/api/currencies';                              // GET    — enabled currencies
+	private const EP_CONFIG         = '/woo/config';                                  // PUT    — store config (currency)
+	private const EP_CREATE_SQS     = '/api/products/create-sqs';                     // POST   — queue product create → { messageId }
+	private const EP_PRODUCTS       = '/api/products';                                // GET …/{id} · PUT …/{id} · DELETE …/{id} · DELETE ?ids=
+	private const EP_FINISH_SYNC    = '/api/users/me/finish-sync?origin=WOOCOMMERCE'; // PUT    — mark first sync done
+	private const EP_API_CREDENTIAL = '/api/users/api-credential/';                   // DELETE — remove the connection + API key
+	private const EP_ECOM_USER      = '/api/ecom-user';                               // GET    — account's store connections + their apiCredential ids
+	private const EP_OAUTH_CALLBACK = '/woo/auth/callback-supplier/';                 // OAuth  — backend receives the WC REST key
+
 	/**
 	 * Active environment, resolved in cascade:
 	 *   1) VIO_WC_SYNC_ENV constant in wp-config.php
@@ -114,61 +127,131 @@ final class Api_Client {
 	}
 
 	// --- Endpoints --------------------------------------------------------
-	// Vio commerce API endpoints.
+	// Thin wrappers; the paths all live in the EP_* constants above.
 
 	public static function get_current_user() {
-		return self::request( '/catalog/users/me' );
+		return self::request( self::EP_CURRENT_USER );
 	}
 
 	public static function get_currencies() {
-		return self::request( '/api/currencies' );
+		return self::request( self::EP_CURRENCIES );
 	}
 
 	public static function save_config( array $config ) {
-		return self::request( '/woo/config', 'PUT', $config );
+		return self::request( self::EP_CONFIG, 'PUT', $config );
 	}
 
 	public static function create_products( array $payload ) {
-		return self::request( '/api/products/create-sqs', 'POST', $payload );
+		return self::request( self::EP_CREATE_SQS, 'POST', $payload );
 	}
 
 	public static function get_product( string $product_id ) {
-		return self::request( '/api/products/' . rawurlencode( $product_id ) );
+		return self::request( self::EP_PRODUCTS . '/' . rawurlencode( $product_id ) );
 	}
 
 	public static function update_product( string $product_id, array $data ) {
-		return self::request( '/api/products/' . rawurlencode( $product_id ), 'PUT', $data );
+		return self::request( self::EP_PRODUCTS . '/' . rawurlencode( $product_id ), 'PUT', $data );
 	}
 
 	public static function delete_product( string $product_id ) {
-		return self::request( '/api/products/' . rawurlencode( $product_id ), 'DELETE' );
+		return self::request( self::EP_PRODUCTS . '/' . rawurlencode( $product_id ), 'DELETE' );
 	}
 
 	public static function delete_products( array $product_ids ) {
 		$ids = implode( ',', array_map( 'rawurlencode', $product_ids ) );
-		return self::request( '/api/products?ids=' . $ids, 'DELETE' );
+		return self::request( self::EP_PRODUCTS . '?ids=' . $ids, 'DELETE' );
 	}
 
 	public static function finish_sync() {
-		return self::request( '/api/users/me/finish-sync?origin=WOOCOMMERCE', 'PUT' );
+		return self::request( self::EP_FINISH_SYNC, 'PUT' );
+	}
+
+	/**
+	 * Remove the store's connection + API credential on the backend (disconnect).
+	 * Mirrors the manual call: { fullDelete: true, id: <credentialId>, ecomUser: { id: <userId> } }.
+	 */
+	public static function delete_api_credential( int $credential_id, int $ecom_user_id ) {
+		return self::request(
+			self::EP_API_CREDENTIAL,
+			'DELETE',
+			[
+				'fullDelete' => true,
+				'id'         => $credential_id,
+				'ecomUser'   => [ 'id' => $ecom_user_id ],
+			]
+		);
+	}
+
+	/**
+	 * Resolve this store's WooCommerce connection from GET /api/ecom-user, returning
+	 * the two ids the disconnect needs: the apiCredential id and the ecom-user id.
+	 *
+	 * Note: `ecom_user_id` is the **entry's own `id`** in /api/ecom-user (e.g. 199),
+	 * NOT the Vio account id from /catalog/users/me (e.g. 1289) — the backend's
+	 * DELETE payload keys off the former.
+	 *
+	 * @return array{credential_id:int,ecom_user_id:int}|null
+	 */
+	public static function find_woo_connection(): ?array {
+		$list = self::request( self::EP_ECOM_USER );
+		if ( is_wp_error( $list ) || ! is_array( $list ) ) {
+			return null;
+		}
+		return self::pick_woo_connection( $list, (string) wp_parse_url( site_url(), PHP_URL_HOST ) );
+	}
+
+	/**
+	 * Pick this store's WooCommerce connection from a decoded /api/ecom-user list,
+	 * returning the ids the disconnect needs. Pure (no I/O) so it is unit-tested.
+	 *
+	 * `ecom_user_id` is each entry's own `id` (e.g. 199) — NOT the Vio account id
+	 * from /catalog/users/me (e.g. 1289), which the backend rejects with HTTP 417.
+	 *
+	 * @param array  $list Decoded /api/ecom-user entries (objects).
+	 * @param string $host This store's host, to disambiguate multiple connections.
+	 * @return array{credential_id:int,ecom_user_id:int}|null
+	 */
+	public static function pick_woo_connection( array $list, string $host ): ?array {
+		$fallback = null;
+
+		foreach ( $list as $entry ) {
+			if ( ! is_object( $entry ) || ! isset( $entry->id, $entry->ecomName, $entry->apiCredential->id ) || 'WOOCOMMERCE' !== $entry->ecomName ) {
+				continue;
+			}
+
+			$match    = array(
+				'credential_id' => (int) $entry->apiCredential->id,
+				'ecom_user_id'  => (int) $entry->id,
+			);
+			$fallback = $fallback ?? $match;
+
+			// Prefer the connection whose URL host matches this store.
+			$url_host = isset( $entry->connection->url ) ? (string) wp_parse_url( $entry->connection->url, PHP_URL_HOST ) : '';
+			if ( '' !== $host && $url_host === $host ) {
+				return $match;
+			}
+		}
+
+		return $fallback;
 	}
 
 	/**
 	 * WooCommerce OAuth authorization URL with a callback to Vio.
 	 */
-	public static function authorization_url( int $user_id ): string {
-		$current_path = isset( $_SERVER['REQUEST_URI'] )
-			? sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ) )
-			: '';
-		$parts      = explode( '/wp-admin', $current_path );
-		$return_url = site_url( '/wp-admin' . ( $parts[1] ?? '' ) );
+	public static function authorization_url( int $user_id, string $return_url = '' ): string {
+		// Where WooCommerce sends the browser after approval. Must be an explicit
+		// admin URL — deriving it from REQUEST_URI breaks when this runs inside an
+		// AJAX request (it would point back at admin-ajax.php and render a blank "0").
+		if ( '' === $return_url ) {
+			$return_url = admin_url( 'admin.php?page=vio' );
+		}
 
 		$params = [
 			'app_name'     => Plugin::API_KEY_DESCRIPTION,
 			'scope'        => 'read_write',
 			'user_id'      => $user_id,
 			'return_url'   => $return_url,
-			'callback_url' => self::base_url() . '/woo/auth/callback-supplier/',
+			'callback_url' => self::base_url() . self::EP_OAUTH_CALLBACK,
 		];
 
 		return site_url() . '/wc-auth/v1/authorize?' . http_build_query( $params );

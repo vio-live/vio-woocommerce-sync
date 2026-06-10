@@ -83,13 +83,13 @@
 	width: 200px;
 	height: 1em;
 	margin: 1em auto 0;
-	border: 2px solid #1864ff;
+	border: 2px solid #2f7d5f;
 	box-sizing: border-box;
 	position: relative;
 }
 
 .vio-progress__fill {
-	background: #1864ff;
+	background: #2f7d5f;
 	position: absolute;
 	top: 0;
 	left: 0;
