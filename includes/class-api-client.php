@@ -40,7 +40,8 @@ final class Api_Client {
 	private const EP_CURRENCIES     = '/api/currencies';                              // GET    — enabled currencies
 	private const EP_CONFIG         = '/woo/config';                                  // PUT    — store config (currency)
 	private const EP_CREATE_SQS     = '/api/products/create-sqs';                     // POST   — queue product create → { messageId }
-	private const EP_PRODUCTS       = '/api/products';                                // GET …/{id} · PUT …/{id} · DELETE …/{id} · DELETE ?ids=
+	private const EP_PRODUCTS        = '/api/products';                               // GET …/{id} · PUT …/{id} · DELETE …/{id} · DELETE ?ids=
+	private const EP_VALIDATE_SYNCED = '/api/product/validate-synced';                // GET …/{origin}?originIds= → [{originId,synced,vioId,vioActive}]
 	private const EP_FINISH_SYNC    = '/api/users/me/finish-sync?origin=WOOCOMMERCE'; // PUT    — mark first sync done
 	private const EP_API_CREDENTIAL = '/api/users/api-credential/';                   // DELETE — remove the connection + API key
 	private const EP_ECOM_USER      = '/api/ecom-user';                               // GET    — account's store connections + their apiCredential ids
@@ -160,6 +161,19 @@ final class Api_Client {
 	public static function delete_products( array $product_ids ) {
 		$ids = implode( ',', array_map( 'rawurlencode', $product_ids ) );
 		return self::request( self::EP_PRODUCTS . '?ids=' . $ids, 'DELETE' );
+	}
+
+	/**
+	 * Resolve which WooCommerce products the backend already created, by origin id
+	 * — the fallback for the product-id write-back. Env-agnostic (uses base_url()),
+	 * so it follows the host automatically when the API moves to vio.live.
+	 *
+	 * @param int[]|string[] $origin_ids WooCommerce post ids.
+	 * @return mixed [{ originId, synced, vioId, vioActive }] or \WP_Error.
+	 */
+	public static function validate_synced( array $origin_ids, string $origin = 'WOOCOMMERCE' ) {
+		$ids = implode( ',', array_map( 'rawurlencode', $origin_ids ) );
+		return self::request( self::EP_VALIDATE_SYNCED . '/' . rawurlencode( $origin ) . '?originIds=' . $ids );
 	}
 
 	public static function finish_sync() {

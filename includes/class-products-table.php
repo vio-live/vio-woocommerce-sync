@@ -36,8 +36,12 @@ final class Products_Table {
 			return;
 		}
 
-		wp_enqueue_style( 'vio-wc-sync-admin', VIO_WC_SYNC_URL . 'assets/css/admin.css', [], VIO_WC_SYNC_VERSION );
-		wp_enqueue_script( 'vio-wc-sync-products', VIO_WC_SYNC_URL . 'assets/js/products.js', [ 'jquery' ], VIO_WC_SYNC_VERSION, true );
+		// Version by file mtime so edits bust the browser cache (matches Config_Page).
+		$css_ver = (string) ( @filemtime( VIO_WC_SYNC_DIR . 'assets/css/admin.css' ) ?: VIO_WC_SYNC_VERSION ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+		$js_ver  = (string) ( @filemtime( VIO_WC_SYNC_DIR . 'assets/js/products.js' ) ?: VIO_WC_SYNC_VERSION ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+
+		wp_enqueue_style( 'vio-wc-sync-admin', VIO_WC_SYNC_URL . 'assets/css/admin.css', [], $css_ver );
+		wp_enqueue_script( 'vio-wc-sync-products', VIO_WC_SYNC_URL . 'assets/js/products.js', [ 'jquery' ], $js_ver, true );
 		wp_localize_script(
 			'vio-wc-sync-products',
 			'vioWcSync',

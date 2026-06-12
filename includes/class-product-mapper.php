@@ -31,15 +31,29 @@ final class Product_Mapper {
 	 * Return the Vio product id linked to a WooCommerce post, for a given API key.
 	 */
 	public static function get_remote_product_id( string $user_api_key, int $post_id ): ?string {
-		$field = get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true );
+		$id = self::parse_remote_id( get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true ), $user_api_key );
+		if ( null !== $id ) {
+			return $id;
+		}
 
+		// Fallback: the backend writes the id back under the legacy Reachu key.
+		// reconcile_remote_ids() backfills META_PRODUCT_ID from it, but read it
+		// directly here so auto-update/delete resolve before the backfill runs.
+		return self::parse_remote_id( get_post_meta( $post_id, Plugin::META_LEGACY_PRODUCT_ID, true ), $user_api_key );
+	}
+
+	/**
+	 * Resolve a remote product id from a meta value: either a plain string id,
+	 * or a JSON array [{ idusr, idprod }] when the product is shared across
+	 * several Vio accounts (matched against the current API key).
+	 *
+	 * @param mixed $field
+	 */
+	private static function parse_remote_id( $field, string $user_api_key ): ?string {
 		$decoded = json_decode( (string) $field, true );
 		if ( is_array( $decoded ) ) {
 			$key = array_search( $user_api_key, array_column( $decoded, 'idusr' ), true );
-			if ( false !== $key ) {
-				return (string) $decoded[ $key ]['idprod'];
-			}
-			return null;
+			return false !== $key ? (string) $decoded[ $key ]['idprod'] : null;
 		}
 
 		return is_string( $field ) && '' !== $field ? $field : null;

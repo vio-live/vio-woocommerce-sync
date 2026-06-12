@@ -31,6 +31,14 @@ final class Plugin {
 	public const META_SQS_ID     = 'vio-sqs-id';
 	public const META_ORIGIN     = 'vio-origin';
 
+	/**
+	 * Legacy Reachu meta key. After creating a product the backend writes its
+	 * Vio id back into the WooCommerce post under this key (the old plugin's
+	 * name). The plugin reads it and backfills META_PRODUCT_ID — see
+	 * Store_Status::reconcile_remote_ids().
+	 */
+	public const META_LEGACY_PRODUCT_ID = 'reachu-product-id';
+
 	/** Names of the order webhooks managed by Vio. */
 	public const WEBHOOK_NAMES = [ 'Vio order.created', 'Vio order.updated' ];
 

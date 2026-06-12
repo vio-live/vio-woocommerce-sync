@@ -121,41 +121,72 @@
 			.html( '<span class="vio-dot"></span>' + esc( label ) );
 	}
 
-	/* 4) Sync all — fetch eligible ids, push in chunks, show progress. */
+	/* 4) Sync all — fetch eligible items, push in small batches, show live progress. */
 	$doc.on( 'click', '#vio-sync-all', function () {
-		var $btn = $( this );
-		var $progress = $( '#vio-sync-progress' );
-		var $bar = $progress.find( '.vio-progress-inline__bar span' );
-		var $text = $progress.find( '.vio-progress-inline__text' );
+		var $btn   = $( this );
+		var $panel = $( '#vio-sync-progress' );
+		var $label = $panel.find( '.vio-syncing__label' );
+		var $count = $panel.find( '.vio-syncing__count' );
+		var $bar   = $panel.find( '.vio-syncing__bar span' );
+		var $list  = $panel.find( '.vio-syncing__items' );
 		spin( $btn, true );
 
 		post( 'vio_pending_ids' ).done( function ( r ) {
-			var ids = ( r && r.success && r.data && r.data.ids ) ? r.data.ids : [];
-			if ( ! ids.length ) {
+			var items = ( r && r.success && r.data && r.data.items ) ? r.data.items : [];
+			if ( ! items.length ) {
 				spin( $btn, false );
 				feedback( 'Nothing to sync', true );
 				return;
 			}
 
-			$progress.prop( 'hidden', false );
-			var chunks = chunk( ids, 5 ), total = ids.length, done = 0, i = 0, anyOk = false;
+			$panel.prop( 'hidden', false ).removeClass( 'is-done' );
+			$list.empty();
+			$bar.css( 'width', '0%' );
+			$label.text( 'Syncing products…' );
+			$count.text( '0 / ' + items.length );
+
+			var chunks = chunk( items, 5 ), total = items.length, done = 0, i = 0, anyOk = false;
+
+			function addRows( batch ) {
+				var $rows = batch.map( function ( it ) {
+					var thumb = it.thumb
+						? '<img class="vio-syncing__thumb" src="' + esc( it.thumb ) + '" alt="" />'
+						: '<span class="vio-syncing__thumb vio-syncing__thumb--ph"></span>';
+					var $li = $( '<li class="vio-syncing__item is-active">' + thumb +
+						'<span class="vio-syncing__name">' + esc( it.title || ( '#' + it.id ) ) + '</span>' +
+						'<span class="vio-syncing__tick"></span></li>' );
+					$list.prepend( $li );
+					return $li;
+				} );
+				$list.children().slice( 8 ).remove(); // keep the panel compact
+				return $rows;
+			}
 
 			function next() {
 				if ( i >= chunks.length ) {
 					if ( anyOk ) { post( 'vio_finish_sync' ); }
-					$text.text( 'Done' );
+					$label.text( 'Done' );
+					$count.text( total + ' / ' + total );
+					$panel.addClass( 'is-done' );
 					refreshStats();
-					setTimeout( function () { $progress.prop( 'hidden', true ); $bar.css( 'width', '0%' ); }, 1000 );
+					setTimeout( function () {
+						$panel.prop( 'hidden', true ).removeClass( 'is-done' );
+						$bar.css( 'width', '0%' );
+						$list.empty();
+					}, 1600 );
 					spin( $btn, false );
 					return;
 				}
-				var c = chunks[ i++ ];
-				post( 'vio_sync', { id_posts: c } )
+				var c     = chunks[ i++ ];
+				var ids   = c.map( function ( it ) { return it.id; } );
+				var $rows = addRows( c );
+				post( 'vio_sync', { id_posts: ids } )
 					.done( function () { anyOk = true; } )
 					.always( function () {
 						done += c.length;
 						$bar.css( 'width', Math.round( ( done * 100 ) / total ) + '%' );
-						$text.text( done + ' / ' + total );
+						$count.text( done + ' / ' + total );
+						$rows.forEach( function ( $li ) { $li.removeClass( 'is-active' ).addClass( 'is-done' ); } );
 						next();
 					} );
 			}
@@ -214,11 +245,34 @@
 		feedback( 'Copied', true );
 	} );
 
-	/* 7) Disconnect — confirm before following the link. */
+	/* 7) Disconnect — open the confirm modal (with optional product deletion). */
+	function openModal( sel ) { $( sel ).prop( 'hidden', false ).addClass( 'is-open' ); }
+	function closeModal( sel ) { $( sel ).removeClass( 'is-open' ).prop( 'hidden', true ); }
+
 	$doc.on( 'click', '#vio-disconnect', function ( e ) {
-		if ( ! window.confirm( 'Disconnect this store from Vio? This removes the Vio webhooks and REST API key.' ) ) {
-			e.preventDefault();
+		e.preventDefault();
+		openModal( '#vio-disconnect-modal' );
+	} );
+
+	$doc.on( 'change', '#vio-delete-products', function () {
+		$( '#vio-delete-disclaimer' ).toggleClass( 'is-hidden', ! this.checked );
+	} );
+
+	$doc.on( 'click', '#vio-disconnect-confirm', function () {
+		var href = $( '#vio-disconnect' ).attr( 'href' );
+		var $cb  = $( '#vio-delete-products' );
+		if ( $cb.length && $cb.prop( 'checked' ) ) {
+			href += ( href.indexOf( '?' ) > -1 ? '&' : '?' ) + 'vio_delete=1';
 		}
+		window.location.href = href;
+	} );
+
+	$doc.on( 'click', '#vio-disconnect-modal [data-close]', function () {
+		closeModal( '#vio-disconnect-modal' );
+	} );
+
+	$doc.on( 'keydown', function ( e ) {
+		if ( 'Escape' === e.key ) { closeModal( '#vio-disconnect-modal' ); }
 	} );
 
 	function refreshStats() {

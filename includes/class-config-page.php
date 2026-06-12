@@ -109,6 +109,7 @@ final class Config_Page {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'vio-woocommerce-sync' ) );
 		}
 
+		Store_Status::reconcile_remote_ids();
 		$state = Store_Status::connection_state();
 		$stats = Store_Status::stats();
 
@@ -117,7 +118,13 @@ final class Config_Page {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['vio_disconnected'] ) ) {
-			echo '<div class="vio-notice vio-notice--ok vio-config__alert">' . esc_html__( 'Store disconnected from Vio — removed the API key, REST keys and order webhooks.', 'vio-woocommerce-sync' ) . '</div>';
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$deleted = isset( $_GET['vio_deleted'] ) ? absint( wp_unslash( $_GET['vio_deleted'] ) ) : 0;
+			$alert   = $deleted
+				/* translators: %d: number of products also deleted from Vio */
+				? sprintf( esc_html__( 'Store disconnected from Vio — removed the API key, REST keys, order webhooks and %d product(s) from Vio.', 'vio-woocommerce-sync' ), $deleted )
+				: esc_html__( 'Store disconnected from Vio — removed the API key, REST keys and order webhooks.', 'vio-woocommerce-sync' );
+			echo '<div class="vio-notice vio-notice--ok vio-config__alert">' . $alert . '</div>';
 		}
 
 		echo '<div class="vio-config__grid">';
@@ -125,7 +132,9 @@ final class Config_Page {
 		self::render_settings( $state );
 		self::render_sync( $stats, $state );
 		self::render_logs();
-		echo '</div></div>';
+		echo '</div>';
+		self::render_disconnect_modal( (int) $stats['synced'] );
+		echo '</div>';
 	}
 
 	private static function render_header( array $state ): void {
@@ -307,7 +316,11 @@ final class Config_Page {
 		self::metric( 'not-synced', __( 'Not synced', 'vio-woocommerce-sync' ), $stats['not_synced'] );
 		echo '</div>';
 
-		echo '<div class="vio-progress-inline" id="vio-sync-progress" hidden><div class="vio-progress-inline__bar"><span></span></div><span class="vio-progress-inline__text"></span></div>';
+		echo '<div class="vio-syncing" id="vio-sync-progress" hidden>'
+			. '<div class="vio-syncing__head"><span class="vio-syncing__spinner"></span><span class="vio-syncing__label"></span><span class="vio-syncing__count"></span></div>'
+			. '<div class="vio-syncing__bar"><span></span></div>'
+			. '<ul class="vio-syncing__items"></ul>'
+			. '</div>';
 
 		if ( $stats['sent'] > 0 ) {
 			echo '<p class="vio-note">' . self::icon( 'info' ) . ''
@@ -336,6 +349,37 @@ final class Config_Page {
 		echo '</div>';
 		echo '<pre class="vio-logs__pre" id="vio-logs-pre"><span class="vio-muted">' . esc_html__( 'Expand to load recent activity…', 'vio-woocommerce-sync' ) . '</span></pre>';
 		echo '</div></section>';
+	}
+
+	/**
+	 * Confirmation modal for Disconnect. Offers (checked by default) to also
+	 * delete the store's synced products in Vio, with a disclaimer. The choice
+	 * is read back by Ajax::logout() via the `vio_delete` flag.
+	 */
+	private static function render_disconnect_modal( int $synced ): void {
+		echo '<div class="vio-modal" id="vio-disconnect-modal" hidden>';
+		echo '<div class="vio-modal__overlay" data-close></div>';
+		echo '<div class="vio-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="vio-disconnect-title">';
+		echo '<h2 class="vio-modal__title" id="vio-disconnect-title">' . self::icon( 'link' ) . '' . esc_html__( 'Disconnect from Vio', 'vio-woocommerce-sync' ) . '</h2>';
+		echo '<p class="vio-modal__text">' . esc_html__( 'This removes the API key, REST keys and order webhooks for this store.', 'vio-woocommerce-sync' ) . '</p>';
+
+		if ( $synced > 0 ) {
+			$count_html = '<strong data-key="synced-count">' . (int) $synced . '</strong>';
+			echo '<label class="vio-modal__check"><input type="checkbox" id="vio-delete-products" checked /> '
+				/* translators: %s: number of synced products */
+				. sprintf( esc_html__( 'Also delete my %s synced product(s) from Vio', 'vio-woocommerce-sync' ), $count_html )
+				. '</label>';
+			echo '<p class="vio-modal__disclaimer" id="vio-delete-disclaimer">' . self::icon( 'info' ) . ''
+				. esc_html__( 'Your products will be deleted from Vio together with the connection. Vio soft-deletes them — existing references won’t break, but the products stop being available.', 'vio-woocommerce-sync' )
+				. '</p>';
+		}
+
+		echo '<div class="vio-modal__actions">';
+		echo '<button type="button" class="button vio-btn" data-close>' . esc_html__( 'Cancel', 'vio-woocommerce-sync' ) . '</button>';
+		echo '<button type="button" class="button vio-btn vio-btn--danger" id="vio-disconnect-confirm">' . esc_html__( 'Disconnect', 'vio-woocommerce-sync' ) . '</button>';
+		echo '</div>';
+
+		echo '</div></div>';
 	}
 
 	// --- Small render helpers -------------------------------------------

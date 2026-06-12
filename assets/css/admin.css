@@ -52,8 +52,8 @@
 .vio-progress {
 	position: fixed;
 	inset: 0;
-	background: rgba( 0, 0, 0, 0.5 );
-	z-index: 9999;
+	background: rgba( 17, 24, 28, 0.5 );
+	z-index: 100000;
 	display: none;
 }
 
@@ -65,49 +65,81 @@
 
 .vio-progress__content {
 	background: #fff;
-	width: 300px;
+	width: 420px;
+	max-width: calc( 100vw - 40px );
 	box-sizing: border-box;
-	text-align: center;
-	border-radius: 10px;
-	padding: 1.5em 1em;
+	border-radius: 14px;
+	padding: 20px 22px;
+	box-shadow: 0 20px 60px rgba( 0, 0, 0, 0.3 );
+	animation: vio-progress-pop 0.16s ease;
 }
 
-.vio-progress__logo {
-	width: 50px;
-	height: 40px;
-	margin: 0 auto 0.5em;
-	background: url( ../img/icon.svg ) center / contain no-repeat;
+.vio-progress__head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.vio-progress__spinner {
+	width: 18px;
+	height: 18px;
+	flex: none;
+	border: 2px solid #cdd5d1;
+	border-top-color: #2f7d5f;
+	border-radius: 50%;
+	animation: vio-progress-spin 0.7s linear infinite;
 }
+.vio-progress.is-done .vio-progress__spinner { border-color: #2f7d5f; animation: none; }
+.vio-progress__label { font-size: 14px; font-weight: 600; color: #1d2b25; }
+.vio-progress__count { margin-left: auto; font-size: 12px; color: #6b7772; font-variant-numeric: tabular-nums; }
 
-.vio-progress__bar {
-	width: 200px;
-	height: 1em;
-	margin: 1em auto 0;
-	border: 2px solid #2f7d5f;
-	box-sizing: border-box;
-	position: relative;
-}
-
+.vio-progress__bar { width: 100%; height: 7px; background: #e2e6e4; border-radius: 999px; overflow: hidden; }
 .vio-progress__fill {
-	background: #2f7d5f;
-	position: absolute;
-	top: 0;
-	left: 0;
 	height: 100%;
 	width: 0;
-	transition: width 0.2s ease;
+	border-radius: 999px;
+	background: linear-gradient( 90deg, #3a9a76, #2f7d5f );
+	background-size: 200% 100%;
+	transition: width 0.3s ease;
+	animation: vio-progress-shimmer 1.2s linear infinite;
 }
+.vio-progress.is-done .vio-progress__fill { animation: none; }
 
-.vio-progress__info {
-	width: 180px;
-	margin: 1em auto 0;
+.vio-progress__items { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.vio-progress__item {
 	display: flex;
-	justify-content: space-between;
-	text-align: left;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 8px;
+	background: #f4f6f5;
+	border-radius: 8px;
+	font-size: 13px;
+	color: #1d2b25;
+	animation: vio-progress-slidein 0.2s ease;
+}
+.vio-progress__thumb { width: 28px; height: 28px; flex: none; border-radius: 6px; object-fit: cover; background: #e6eae8; }
+.vio-progress__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vio-progress__tick { width: 16px; height: 16px; flex: none; border-radius: 50%; position: relative; }
+.vio-progress__item.is-active .vio-progress__tick { border: 2px solid #cdd5d1; border-top-color: #2f7d5f; animation: vio-progress-spin 0.7s linear infinite; }
+.vio-progress__item.is-done { opacity: 0.7; }
+.vio-progress__item.is-done .vio-progress__tick { background: #2f7d5f; }
+.vio-progress__item.is-done .vio-progress__tick::after {
+	content: '';
+	position: absolute;
+	left: 5px;
+	top: 2px;
+	width: 4px;
+	height: 8px;
+	border: solid #fff;
+	border-width: 0 2px 2px 0;
+	transform: rotate( 45deg );
 }
 
-.vio-progress__info p {
-	margin: 0;
+@keyframes vio-progress-spin { to { transform: rotate( 360deg ); } }
+@keyframes vio-progress-shimmer { to { background-position: 200% 0; } }
+@keyframes vio-progress-slidein { from { opacity: 0; transform: translateY( -4px ); } to { opacity: 1; transform: none; } }
+@keyframes vio-progress-pop { from { opacity: 0; transform: translateY( 8px ) scale( 0.98 ); } to { opacity: 1; transform: none; } }
+@media ( prefers-reduced-motion: reduce ) {
+	.vio-progress__content,
+	.vio-progress__spinner,
+	.vio-progress__fill,
+	.vio-progress__item,
+	.vio-progress__item.is-active .vio-progress__tick { animation: none; }
 }
 
 /* ====== Custom currency selector (optional) ====== */

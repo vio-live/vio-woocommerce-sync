@@ -121,6 +121,106 @@ final class Store_Status {
 	}
 
 	/**
+	 * Link products the backend already created. After a product is created the
+	 * backend writes its Vio id back into the WooCommerce post under the legacy
+	 * `reachu-product-id` meta (the old plugin's key); copy it into
+	 * META_PRODUCT_ID so the Sent→Synced transition, the sync stats and the
+	 * auto-update/delete flows — all keyed on META_PRODUCT_ID — work.
+	 *
+	 * Idempotent and cheap (one indexed query, a write only for new matches),
+	 * so it is safe to call on every page load and stats fetch.
+	 *
+	 * @return int Number of products linked this run.
+	 */
+	public static function reconcile_remote_ids(): int {
+		// 1) Free fast-path: the backend's write-back into the legacy meta.
+		$linked = self::reconcile_from_writeback();
+
+		// 2) Fallback: ask the backend which still-queued products are synced.
+		//    Only fires a request when something is actually pending.
+		if ( Api_Client::has_api_key() ) {
+			$linked += self::reconcile_from_lookup();
+		}
+
+		if ( $linked > 0 ) {
+			Logger::info( '[reconcile] linked ' . $linked . ' product(s) to Vio' );
+		}
+		return $linked;
+	}
+
+	/**
+	 * Fast-path: the backend writes the Vio id into the legacy `reachu-product-id`
+	 * meta; copy it into META_PRODUCT_ID. Pure local query — no network.
+	 */
+	private static function reconcile_from_writeback(): int {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT legacy.post_id AS post_id, legacy.meta_value AS remote_id
+				   FROM {$wpdb->postmeta} legacy
+				  WHERE legacy.meta_key = %s AND legacy.meta_value <> ''
+				    AND NOT EXISTS (
+				        SELECT 1 FROM {$wpdb->postmeta} synced
+				         WHERE synced.post_id = legacy.post_id
+				           AND synced.meta_key = %s AND synced.meta_value <> ''
+				    )",
+				Plugin::META_LEGACY_PRODUCT_ID,
+				Plugin::META_PRODUCT_ID
+			)
+		);
+
+		foreach ( (array) $rows as $row ) {
+			update_post_meta( (int) $row->post_id, Plugin::META_PRODUCT_ID, (string) $row->remote_id );
+		}
+		return count( (array) $rows );
+	}
+
+	/**
+	 * Fallback: for products still "Sent" (queued but without an id), ask the
+	 * backend's validate-synced endpoint by origin id and write the returned
+	 * vioId. Skips the network call entirely when nothing is pending.
+	 */
+	private static function reconcile_from_lookup(): int {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		$post_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT sent.post_id
+				   FROM {$wpdb->postmeta} sent
+				  WHERE sent.meta_key = %s AND sent.meta_value <> ''
+				    AND NOT EXISTS (
+				        SELECT 1 FROM {$wpdb->postmeta} synced
+				         WHERE synced.post_id = sent.post_id
+				           AND synced.meta_key = %s AND synced.meta_value <> ''
+				    )",
+				Plugin::META_SQS_ID,
+				Plugin::META_PRODUCT_ID
+			)
+		);
+		if ( empty( $post_ids ) ) {
+			return 0;
+		}
+
+		$linked = 0;
+		foreach ( array_chunk( array_map( 'intval', $post_ids ), 50 ) as $batch ) {
+			$result = Api_Client::validate_synced( $batch );
+			if ( is_wp_error( $result ) || ! is_array( $result ) ) {
+				continue;
+			}
+			foreach ( $result as $entry ) {
+				if ( isset( $entry->originId, $entry->vioId ) && ! empty( $entry->synced ) ) {
+					update_post_meta( (int) $entry->originId, Plugin::META_PRODUCT_ID, (string) $entry->vioId );
+					++$linked;
+				}
+			}
+		}
+		return $linked;
+	}
+
+	/**
 	 * JSON-friendly connection snapshot for the "Re-check" action.
 	 *
 	 * @return array<string,mixed>

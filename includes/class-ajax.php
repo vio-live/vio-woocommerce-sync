@@ -156,13 +156,26 @@ final class Ajax {
 	public static function stats(): void {
 		check_ajax_referer( 'vio_sync', 'nonce' );
 		self::guard();
+		Store_Status::reconcile_remote_ids();
 		wp_send_json_success( Store_Status::stats() );
 	}
 
 	public static function pending_ids(): void {
 		check_ajax_referer( 'vio_sync', 'nonce' );
 		self::guard();
-		wp_send_json_success( [ 'ids' => Store_Status::pending_product_ids() ] );
+		// Link already-created products first so "Sync all" doesn't re-queue them.
+		Store_Status::reconcile_remote_ids();
+
+		$ids   = Store_Status::pending_product_ids();
+		$items = array();
+		foreach ( $ids as $id ) {
+			$items[] = array(
+				'id'    => $id,
+				'title' => wp_strip_all_tags( (string) get_the_title( $id ) ),
+				'thumb' => (string) get_the_post_thumbnail_url( $id, 'thumbnail' ),
+			);
+		}
+		wp_send_json_success( [ 'ids' => $ids, 'items' => $items ] );
 	}
 
 	public static function logs(): void {
@@ -174,6 +187,11 @@ final class Ajax {
 	public static function logout(): void {
 		check_admin_referer( 'vio_logout' );
 		self::guard();
+
+		// If the user opted in, delete this store's products in Vio first — while
+		// the API key is still valid (the backend soft-deletes them).
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce checked above.
+		$deleted = isset( $_GET['vio_delete'] ) ? Sync::delete_all_remote( Api_Client::api_key() ) : 0;
 
 		// Tear down the backend connection too, while the key is still valid:
 		// resolve this store's credential + ecom-user ids, then delete it.
@@ -188,9 +206,16 @@ final class Ajax {
 		update_option( Plugin::OPT_API_KEY, '' );
 		update_option( Plugin::OPT_CURRENCY, '' );
 		Plugin::cleanup();
+		// Drop every product's sync meta so a disconnected store doesn't keep
+		// showing "Synced", and a reconnect starts from a clean slate.
+		Sync::unlink_all_products();
 
-		Logger::info( '[logout] store disconnected from Vio' );
-		wp_safe_redirect( admin_url( 'admin.php?page=' . Config_Page::MENU_SLUG . '&vio_disconnected=1' ) );
+		Logger::info( '[logout] store disconnected from Vio' . ( $deleted ? " (deleted {$deleted} product(s) in Vio)" : '' ) );
+		$redirect = admin_url( 'admin.php?page=' . Config_Page::MENU_SLUG . '&vio_disconnected=1' );
+		if ( $deleted ) {
+			$redirect = add_query_arg( 'vio_deleted', $deleted, $redirect );
+		}
+		wp_safe_redirect( $redirect );
 		exit;
 	}
 }

@@ -269,11 +269,45 @@
 .vio-metric--sent .vio-metric__value { color: var(--vio-muted); }
 .vio-metric__value.is-bump { animation: vio-bump 0.45s ease; }
 
-/* ---- Inline progress (sync all) ---- */
-.vio-progress-inline { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
-.vio-progress-inline__bar { flex: 1; height: 6px; background: #e9eaec; border-radius: 999px; overflow: hidden; }
-.vio-progress-inline__bar span { display: block; height: 100%; width: 0; background: var(--vio-green); border-radius: 999px; transition: width 0.3s ease; }
-.vio-progress-inline__text { font-size: 12px; color: var(--vio-muted); min-width: 54px; text-align: right; }
+/* ---- Sync progress panel (sync all) ---- */
+.vio-syncing { margin-top: 16px; padding: 14px 16px; background: var(--vio-surface); border-radius: 12px; }
+.vio-syncing__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.vio-syncing__spinner { width: 16px; height: 16px; flex: none; border: 2px solid #cdd5d1; border-top-color: var(--vio-green); border-radius: 50%; animation: vio-spin 0.7s linear infinite; }
+.vio-syncing.is-done .vio-syncing__spinner { border-color: var(--vio-green); animation: none; }
+.vio-syncing__label { font-size: 13.5px; font-weight: 600; color: var(--vio-ink); }
+.vio-syncing__count { margin-left: auto; font-size: 12px; color: var(--vio-muted); font-variant-numeric: tabular-nums; }
+.vio-syncing__bar { height: 7px; background: #e2e6e4; border-radius: 999px; overflow: hidden; }
+.vio-syncing__bar span { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--vio-green), var(--vio-green-dark)); background-size: 200% 100%; transition: width 0.35s ease; animation: vio-shimmer 1.2s linear infinite; }
+.vio-syncing.is-done .vio-syncing__bar span { animation: none; }
+.vio-syncing__items { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.vio-syncing__item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: #fff; border-radius: 8px; font-size: 13px; color: var(--vio-ink); animation: vio-slidein 0.2s ease; }
+.vio-syncing__thumb { width: 28px; height: 28px; flex: none; border-radius: 6px; object-fit: cover; background: #eef1ef; }
+.vio-syncing__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vio-syncing__tick { width: 16px; height: 16px; flex: none; border-radius: 50%; position: relative; }
+.vio-syncing__item.is-active .vio-syncing__tick { border: 2px solid #cdd5d1; border-top-color: var(--vio-green); animation: vio-spin 0.7s linear infinite; }
+.vio-syncing__item.is-done { opacity: 0.7; }
+.vio-syncing__item.is-done .vio-syncing__tick { background: var(--vio-green); }
+.vio-syncing__item.is-done .vio-syncing__tick::after { content: ''; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+/* ---- Modal (disconnect confirmation) ---- */
+.vio-modal { position: fixed; inset: 0; z-index: 100000; display: none; }
+.vio-modal.is-open { display: block; }
+.vio-modal__overlay { position: absolute; inset: 0; background: rgba(17, 24, 28, 0.45); animation: vio-fade 0.15s ease; }
+.vio-modal__dialog { position: relative; max-width: 440px; margin: 12vh auto 0; background: #fff; border-radius: 14px; padding: 22px 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); animation: vio-pop 0.16s ease; }
+.vio-modal__title { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 17px; color: var(--vio-ink); }
+.vio-modal__title .vio-ico { width: 18px; height: 18px; color: var(--vio-danger); }
+.vio-modal__text { margin: 0 0 14px; font-size: 13px; color: var(--vio-muted); line-height: 1.5; }
+.vio-modal__check { display: flex; align-items: flex-start; gap: 9px; font-size: 13.5px; color: var(--vio-ink); cursor: pointer; padding: 10px 12px; background: var(--vio-surface); border-radius: 9px; }
+.vio-modal__check input { margin-top: 2px; }
+.vio-modal__disclaimer { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--vio-danger); background: #fbeaea; border: 1px solid #e6c4c4; border-radius: 9px; padding: 9px 11px; }
+.vio-modal__disclaimer .vio-ico { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+.vio-modal__disclaimer.is-hidden { display: none; }
+.vio-modal__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+@keyframes vio-shimmer { to { background-position: 200% 0; } }
+@keyframes vio-slidein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes vio-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes vio-pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
 
 /* ---- Note ---- */
 .vio-note {
@@ -330,7 +364,13 @@
 	.vio-card,
 	.vio-badge--ok .vio-dot,
 	.vio-metric__value.is-bump,
-	.vio-spinner { animation: none; }
+	.vio-spinner,
+	.vio-syncing__spinner,
+	.vio-syncing__bar span,
+	.vio-syncing__item,
+	.vio-syncing__item.is-active .vio-syncing__tick,
+	.vio-modal__overlay,
+	.vio-modal__dialog { animation: none; }
 	.vio-card,
 	.vio-metric { transition: none; }
 }

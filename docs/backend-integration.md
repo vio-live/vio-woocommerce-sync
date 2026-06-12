@@ -4,6 +4,15 @@ What the Vio backend must expose for each plugin feature. This is the
 plugin → backend contract: every call the plugin makes today, its payload, the
 response it expects, and the one gap that blocks a full sync.
 
+> **Update 2026-06-12 — the product-id gap is RESOLVED (plugin side).** The
+> backend already writes the created Vio id back into each product under the
+> legacy `reachu-product-id` meta; the plugin now consumes it, and falls back to
+> `GET /api/product/validate-synced/{origin}?originIds=` for any product the
+> write-back hasn't reached. "Sent → Synced" works end-to-end. The remaining
+> **backend** item is product **activation** — synced products land with
+> `vioActive:false` and nothing in the sync flow publishes them. Detail in the
+> handbook journal `2026-06-12-woo.md`.
+
 Today the plugin talks to the **Reachu** API (`api.reachu.io` prod /
 `api-qa.reachu.io` staging). The target is **`api-commerce.vio.live`**. The
 plugin is already env-agnostic (a `wp-config` constant or the
