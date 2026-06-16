@@ -13,8 +13,8 @@ response it expects, and the one gap that blocks a full sync.
 > `vioActive:false` and nothing in the sync flow publishes them. Detail in the
 > handbook journal `2026-06-12-woo.md`.
 
-Today the plugin talks to the **Reachu** API (`api.reachu.io` prod /
-`api-qa.reachu.io` staging). The target is **`api-commerce.vio.live`**. The
+Today the plugin talks to the **Reachu** API (`api-ecom.vio.live` prod /
+`api-ecom-dev.vio.live` staging). The target is **`api-commerce.vio.live`**. The
 plugin is already env-agnostic (a `wp-config` constant or the
 `vio_wc_sync_api_base` filter repoints it with zero code change), so "the Vio
 backend" below means "whatever host `Api_Client::base_url()` resolves to".

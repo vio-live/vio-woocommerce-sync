@@ -56,8 +56,8 @@ assets/{js,css,img}/  ·  readme.txt  ·  languages/
 - Sin dependencias muertas; versionado semántico (1.0.0).
 
 ## Estado de la API
-- **Entornos configurados**: `production` → `https://api.reachu.io`,
-  `staging` → `https://api-qa.reachu.io`.
+- **Entornos configurados**: `production` → `https://api-ecom.vio.live`,
+  `staging` → `https://api-ecom-dev.vio.live`.
 - Migración a Vio (`https://api-commerce.vio.live`) sin fricción, por orden de prioridad:
   1. Constante en `wp-config.php`: `define( 'VIO_WC_SYNC_API_URL_PRODUCTION', 'https://api-commerce.vio.live' );`
   2. Editar una línea en `Api_Client::ENVIRONMENTS`.

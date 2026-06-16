@@ -25,8 +25,8 @@ final class Api_Client {
 	 *   define( 'VIO_WC_SYNC_API_URL_STAGING',    'https://api-staging-commerce.vio.live' );
 	 */
 	public const ENVIRONMENTS = [
-		'production' => 'https://api.reachu.io',
-		'staging'    => 'https://api-qa.reachu.io',
+		'production' => 'https://api-ecom.vio.live',
+		'staging'    => 'https://api-ecom-dev.vio.live',
 	];
 
 	public const DEFAULT_ENVIRONMENT = 'production';
