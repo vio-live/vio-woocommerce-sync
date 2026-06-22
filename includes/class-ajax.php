@@ -132,6 +132,11 @@ final class Ajax {
 		$env      = isset( $_POST['environment'] ) ? sanitize_key( wp_unslash( $_POST['environment'] ) ) : '';
 		$currency = isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( $_POST['currency'] ) ) : '';
 
+		// A currency is required to connect — prices can't sync without one.
+		if ( '' === $currency ) {
+			wp_send_json_error( array( 'message' => __( 'Select a currency before connecting.', 'vio-woocommerce-sync' ) ) );
+		}
+
 		Store_Status::save_options( $apikey, $env, $currency );
 
 		$user = Api_Client::get_current_user();

@@ -39,16 +39,30 @@
 		$( this ).toggleClass( 'is-revealed', reveal );
 	} );
 
+	/* Clear the currency error as soon as one is picked. */
+	$doc.on( 'change', '#vio-currency', function () {
+		$( this ).removeClass( 'is-invalid' );
+	} );
+
 	/* 2) Save settings. */
 	$doc.on( 'submit', '#vio-settings-form', function ( e ) {
 		e.preventDefault();
 		var $btn = $( '#vio-save' );
 		var mode = $btn.data( 'action' );
+		var $currency = $( '#vio-currency' );
 		var data = {
 			apikey: $( '#vio-apikey' ).val(),
 			environment: $( '#vio-environment' ).val(),
-			currency: $( '#vio-currency' ).val()
+			currency: $currency.val()
 		};
+
+		// A currency is required to connect — prices have no meaning without one.
+		if ( 'connect' === mode && ! data.currency ) {
+			$currency.addClass( 'is-invalid' ).trigger( 'focus' );
+			feedback( 'Choose a currency before connecting', false );
+			return;
+		}
+
 		spin( $btn, true );
 
 		// "Connect" mode: save + validate, then jump straight to OAuth.

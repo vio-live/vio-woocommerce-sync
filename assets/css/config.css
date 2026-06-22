@@ -206,6 +206,11 @@
 	outline: none;
 }
 
+.vio-config .vio-field select.is-invalid {
+	border-color: var(--vio-danger);
+	box-shadow: 0 0 0 3px rgba(179, 45, 46, 0.15);
+}
+
 .vio-field__control--key { max-width: 360px; }
 
 .vio-reveal {
