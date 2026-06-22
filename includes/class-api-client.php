@@ -21,12 +21,12 @@ final class Api_Client {
 	 *
 	 * Each environment can be overridden from wp-config.php (zero code change):
 	 *
-	 *   define( 'VIO_WC_SYNC_API_URL_PRODUCTION', 'https://api-commerce.vio.live' );
-	 *   define( 'VIO_WC_SYNC_API_URL_STAGING',    'https://api-staging-commerce.vio.live' );
+	 *   define( 'VIO_WC_SYNC_API_URL_PRODUCTION', 'https://api-ecom.vio.live' );
+	 *   define( 'VIO_WC_SYNC_API_URL_STAGING',    'https://api-ecom-staging.vio.live' );
 	 */
 	public const ENVIRONMENTS = [
 		'production' => 'https://api-ecom.vio.live',
-		'staging'    => 'https://api-ecom-dev.vio.live',
+		'staging'    => 'https://api-ecom-staging.vio.live',
 	];
 
 	public const DEFAULT_ENVIRONMENT = 'production';
