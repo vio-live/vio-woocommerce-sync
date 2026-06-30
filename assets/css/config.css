@@ -66,11 +66,19 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 16px;
-	align-items: start;
+	align-items: stretch;
 }
 
 .vio-card--sync,
 .vio-card--logs { grid-column: 1 / -1; }
+
+/* Connection + Settings: equal height (grid stretch) with the action row pinned
+   to the bottom, so the two cards' buttons line up. */
+.vio-card--connection,
+.vio-card--settings { display: flex; flex-direction: column; }
+.vio-card--settings .vio-form { flex: 1 1 auto; }
+.vio-card--connection .vio-card__actions,
+.vio-card--settings .vio-card__actions { margin-top: auto; }
 
 @media (max-width: 782px) {
 	.vio-config__grid { grid-template-columns: 1fr; }
@@ -210,6 +218,28 @@
 	border-color: var(--vio-danger);
 	box-shadow: 0 0 0 3px rgba(179, 45, 46, 0.15);
 }
+
+.vio-config .vio-field input:disabled,
+.vio-config .vio-field select:disabled {
+	background: #f1f3f4;
+	color: var(--vio-muted);
+	cursor: not-allowed;
+	opacity: 1;
+}
+
+/* Skeleton placeholder while the connection check runs on load. */
+.vio-skeleton {
+	display: inline-block;
+	width: 96px;
+	height: 13px;
+	border-radius: 4px;
+	vertical-align: middle;
+	background: linear-gradient( 90deg, #e7e9ea 25%, #f2f3f4 50%, #e7e9ea 75% );
+	background-size: 200% 100%;
+	animation: vio-skeleton 1.2s ease-in-out infinite;
+}
+@keyframes vio-skeleton { to { background-position: -200% 0; } }
+@media ( prefers-reduced-motion: reduce ) { .vio-skeleton { animation: none; } }
 
 .vio-field__control--key { max-width: 360px; }
 

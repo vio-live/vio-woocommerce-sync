@@ -97,6 +97,7 @@ final class Config_Page {
 				'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
 				'nonce'       => wp_create_nonce( 'vio_sync' ),
 				'productsUrl' => admin_url( 'edit.php?post_type=product' ),
+				'hasKey'      => Api_Client::has_api_key(),
 				'diag'        => Store_Status::diag_string(),
 			]
 		);
@@ -109,8 +110,10 @@ final class Config_Page {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'vio-woocommerce-sync' ) );
 		}
 
-		Store_Status::reconcile_remote_ids();
-		$state = Store_Status::connection_state();
+		// Render fast: no blocking network call here. The connection card starts in
+		// a "Checking…" state; config.js runs the health check + reconcile/stats
+		// asynchronously on load, so a slow/flaky backend never blocks the page.
+		$state = self::initial_state();
 		$stats = Store_Status::stats();
 
 		echo '<div class="wrap vio-config">';
@@ -137,10 +140,30 @@ final class Config_Page {
 		echo '</div>';
 	}
 
+	/**
+	 * Local-only connection state for the first paint — no network call. config.js
+	 * fills in the live state (account, health, webhooks, key validity) on load.
+	 */
+	private static function initial_state(): array {
+		return array(
+			'has_key'   => Api_Client::has_api_key(),
+			'pending'   => true,
+			'connected' => false,
+			'valid'     => false,
+			'reachable' => false,
+			'status'    => 0,
+			'user'      => null,
+			'latency'   => 0,
+		);
+	}
+
 	private static function render_header( array $state ): void {
 		$env = Api_Client::environment();
 
-		if ( $state['connected'] ) {
+		if ( ! empty( $state['pending'] ) && $state['has_key'] ) {
+			$badge = 'idle';
+			$label = __( 'Checking…', 'vio-woocommerce-sync' );
+		} elseif ( $state['connected'] ) {
 			$badge = 'ok';
 			$label = sprintf( /* translators: %s: environment */ __( 'Connected · %s', 'vio-woocommerce-sync' ), $env );
 		} elseif ( $state['has_key'] ) {
@@ -186,40 +209,48 @@ final class Config_Page {
 
 		// Prominent, status-aware notice (401 rejected vs network error). The slot
 		// is always present so the JS "Re-check" can refresh it without a reload.
-		$message = Store_Status::connection_message( $state );
+		// While the first-load health check is pending, suppress it — don't flash a
+		// false "network error" before the async check answers.
+		$pending = ! empty( $state['pending'] );
+		$message = $pending ? '' : Store_Status::connection_message( $state );
 		echo '<div class="vio-conn-notice" id="vio-conn-notice">';
 		if ( '' !== $message ) {
 			echo '<div class="vio-notice vio-notice--error">' . esc_html( $message ) . '</div>';
 		}
 		echo '</div>';
 
-		$ok   = '<span class="vio-ok"><span class="vio-dot"></span>%s</span>';
-		$bad  = '<span class="vio-bad">%s</span>';
+		$ok       = '<span class="vio-ok"><span class="vio-dot"></span>%s</span>';
+		$bad      = '<span class="vio-bad">%s</span>';
+		$checking = '<span class="vio-skeleton" aria-label="' . esc_attr__( 'Checking…', 'vio-woocommerce-sync' ) . '"></span>';
 
 		echo '<dl class="vio-kv">';
-		self::kv( __( 'Account', 'vio-woocommerce-sync' ), esc_html( $account ), 'account' );
+		self::kv( __( 'Account', 'vio-woocommerce-sync' ), $pending ? $checking : esc_html( $account ), 'account' );
 		self::kv( __( 'Environment', 'vio-woocommerce-sync' ), esc_html( ucfirst( $env ) ), 'environment' );
 		self::kv( __( 'API endpoint', 'vio-woocommerce-sync' ), '<code>' . esc_html( $host ) . '</code>', 'host' );
 		self::kv(
 			__( 'API health', 'vio-woocommerce-sync' ),
-			$state['reachable']
-				? sprintf( $ok, sprintf( /* translators: %d: milliseconds */ esc_html__( 'Reachable · %d ms', 'vio-woocommerce-sync' ), (int) $state['latency'] ) )
-				: sprintf( $bad, esc_html__( 'Unreachable', 'vio-woocommerce-sync' ) ),
+			$pending ? $checking : (
+				$state['reachable']
+					? sprintf( $ok, sprintf( /* translators: %d: milliseconds */ esc_html__( 'Reachable · %d ms', 'vio-woocommerce-sync' ), (int) $state['latency'] ) )
+					: sprintf( $bad, esc_html__( 'Unreachable', 'vio-woocommerce-sync' ) )
+			),
 			'health'
 		);
 		self::kv(
 			__( 'Order webhooks', 'vio-woocommerce-sync' ),
-			$state['connected'] ? sprintf( $ok, esc_html__( 'Active', 'vio-woocommerce-sync' ) ) : sprintf( $bad, esc_html__( 'Not set up', 'vio-woocommerce-sync' ) ),
+			$pending ? $checking : ( $state['connected'] ? sprintf( $ok, esc_html__( 'Active', 'vio-woocommerce-sync' ) ) : sprintf( $bad, esc_html__( 'Not set up', 'vio-woocommerce-sync' ) ) ),
 			'webhooks'
 		);
 		self::kv(
 			__( 'API key', 'vio-woocommerce-sync' ),
-			$state['valid']
-				? sprintf( $ok, esc_html__( 'Valid', 'vio-woocommerce-sync' ) )
-				: ( in_array( (int) $state['status'], array( 401, 403 ), true )
-					/* translators: %d: HTTP status code */
-					? sprintf( $bad, sprintf( esc_html__( 'Rejected (HTTP %d)', 'vio-woocommerce-sync' ), (int) $state['status'] ) )
-					: sprintf( $bad, esc_html__( 'Not verified', 'vio-woocommerce-sync' ) ) ),
+			$pending ? $checking : (
+				$state['valid']
+					? sprintf( $ok, esc_html__( 'Valid', 'vio-woocommerce-sync' ) )
+					: ( in_array( (int) $state['status'], array( 401, 403 ), true )
+						/* translators: %d: HTTP status code */
+						? sprintf( $bad, sprintf( esc_html__( 'Rejected (HTTP %d)', 'vio-woocommerce-sync' ), (int) $state['status'] ) )
+						: sprintf( $bad, esc_html__( 'Not verified', 'vio-woocommerce-sync' ) ) )
+			),
 			'restkey'
 		);
 		echo '</dl>';
@@ -241,6 +272,10 @@ final class Config_Page {
 		$currency   = (string) get_option( Plugin::OPT_CURRENCY );
 		$api_key    = Api_Client::api_key();
 		$currencies = Store_Status::currency_options();
+		// Once a key is saved the store is connected: lock the settings so they
+		// can't be changed by accident. To edit, disconnect first (Connection card).
+		$locked     = ! empty( $state['has_key'] );
+		$dis        = $locked ? ' disabled' : '';
 
 		echo '<section class="vio-card vio-card--settings">';
 		echo '<h2 class="vio-card__title">' . self::icon( 'sliders' ) . '' . esc_html__( 'Settings', 'vio-woocommerce-sync' ) . '</h2>';
@@ -250,8 +285,9 @@ final class Config_Page {
 		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'API key', 'vio-woocommerce-sync' ) . '</span>';
 		echo '<span class="vio-field__control vio-field__control--key">';
 		printf(
-			'<input type="password" id="vio-apikey" name="apikey" value="%s" autocomplete="off" spellcheck="false" />',
-			esc_attr( $api_key )
+			'<input type="password" id="vio-apikey" name="apikey" value="%s" autocomplete="off" spellcheck="false"%s />',
+			esc_attr( $api_key ),
+			$dis
 		);
 		echo '<button type="button" class="vio-reveal" id="vio-reveal" aria-label="' . esc_attr__( 'Show or hide the API key', 'vio-woocommerce-sync' ) . '">' . self::icon( 'eye' ) . self::icon( 'eye-off' ) . '</button>';
 		echo '</span></label>';
@@ -259,7 +295,7 @@ final class Config_Page {
 		// Environment.
 		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'Environment', 'vio-woocommerce-sync' ) . '</span>';
 		echo '<span class="vio-field__control">';
-		printf( '<select id="vio-environment" name="environment"%s>', $env_locked ? ' disabled' : '' );
+		printf( '<select id="vio-environment" name="environment"%s>', ( $env_locked || $locked ) ? ' disabled' : '' );
 		foreach ( [ 'production' => __( 'Production', 'vio-woocommerce-sync' ), 'staging' => __( 'Staging', 'vio-woocommerce-sync' ) ] as $value => $text ) {
 			printf( '<option value="%s"%s>%s</option>', esc_attr( $value ), selected( $env, $value, false ), esc_html( $text ) );
 		}
@@ -272,25 +308,23 @@ final class Config_Page {
 		// Currency.
 		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'Currency', 'vio-woocommerce-sync' ) . '</span>';
 		echo '<span class="vio-field__control">';
-		echo '<select id="vio-currency" name="currency">';
+		echo '<select id="vio-currency" name="currency"' . $dis . '>';
 		foreach ( $currencies as $code => $text ) {
 			printf( '<option value="%s"%s>%s</option>', esc_attr( $code ), selected( $currency, $code, false ), esc_html( $text ) );
 		}
 		echo '</select></span></label>';
 
-		// One-step connect: when the store isn't connected the primary button is
-		// "Connect" (saves the key + validates + jumps to OAuth). Once connected it
-		// becomes "Save changes" (persist currency/env without reconnecting).
-		$connected  = ! empty( $state['connected'] );
-		$btn_action = $connected ? 'save' : 'connect';
-		$btn_label  = $connected ? __( 'Save changes', 'vio-woocommerce-sync' ) : __( 'Connect', 'vio-woocommerce-sync' );
-
+		// One-step Connect when there's no key yet. Once a key is saved the form is
+		// locked ($locked above) — to change a setting, disconnect and reconnect.
+		if ( $locked ) {
+			echo '<p class="vio-hint">' . esc_html__( 'Connected — disconnect to change the key, environment or currency.', 'vio-woocommerce-sync' ) . '</p>';
+		}
 		echo '<div class="vio-card__actions">';
 		printf(
-			'<button type="submit" class="button button-primary vio-btn vio-btn--primary" id="vio-save" data-action="%s"><span class="vio-spinner"></span>%s<span class="vio-save-label">%s</span></button>',
-			esc_attr( $btn_action ),
-			$connected ? '' : self::icon( 'link' ),
-			esc_html( $btn_label )
+			'<button type="submit" class="button button-primary vio-btn vio-btn--primary" id="vio-save" data-action="connect"%s><span class="vio-spinner"></span>%s<span class="vio-save-label">%s</span></button>',
+			$dis,
+			$locked ? '' : self::icon( 'link' ),
+			esc_html__( 'Connect', 'vio-woocommerce-sync' )
 		);
 		echo '<span class="vio-save-feedback" id="vio-save-feedback" aria-live="polite"></span>';
 		echo '</div>';

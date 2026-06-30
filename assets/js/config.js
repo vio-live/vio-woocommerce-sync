@@ -99,14 +99,15 @@
 		} );
 	} );
 
-	/* 3) Re-check connection — update the card in place. */
-	$doc.on( 'click', '#vio-recheck', function () {
-		var $btn = $( this );
-		spin( $btn, true );
-		post( 'vio_health' ).done( function ( r ) {
+	/* 3) Re-check connection — update the card in place (also runs on page load). */
+	function runHealth( $btn ) {
+		if ( $btn ) { spin( $btn, true ); }
+		return post( 'vio_health' ).done( function ( r ) {
 			if ( r && r.success ) { applyHealth( r.data ); }
-		} ).always( function () { spin( $btn, false ); } );
-	} );
+		} ).always( function () { if ( $btn ) { spin( $btn, false ); } } );
+	}
+
+	$doc.on( 'click', '#vio-recheck', function () { runHealth( $( this ) ); } );
 
 	function setField( name, html ) { $( '[data-field="' + name + '"]' ).html( html ); }
 
@@ -133,6 +134,9 @@
 		else if ( d.hasKey ) { cls = 'vio-badge--warn'; label = 'Not connected'; }
 		$b.removeClass( 'vio-badge--ok vio-badge--warn vio-badge--idle' ).addClass( cls )
 			.html( '<span class="vio-dot"></span>' + esc( label ) );
+
+		// Sync actions are only usable once fully connected.
+		$( '#vio-sync-all, #vio-finish-sync' ).prop( 'disabled', ! d.connected );
 	}
 
 	/* 4) Sync all — fetch eligible items, push in small batches, show live progress. */
@@ -306,6 +310,13 @@
 		$v.text( val ).removeClass( 'is-bump' );
 		void $v[ 0 ].offsetWidth;
 		$v.addClass( 'is-bump' );
+	}
+
+	/* Auto-check the connection + refresh stats on entering the page — off the
+	   critical path, so a slow/flaky backend never blocks the render. */
+	if ( cfg.hasKey ) {
+		runHealth();
+		refreshStats();
 	}
 
 } )( jQuery );
