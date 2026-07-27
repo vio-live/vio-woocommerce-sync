@@ -13,8 +13,8 @@ defined( 'ABSPATH' ) || exit;
 
 final class Plugin {
 
-	public const TEXT_DOMAIN = 'vio-woocommerce-sync';
-	public const LOG_SOURCE   = 'vio-woocommerce-sync';
+	public const TEXT_DOMAIN = 'vio-sync-for-woocommerce';
+	public const LOG_SOURCE   = 'vio-sync-for-woocommerce';
 
 	/** Capability required for every sync operation. */
 	public const CAPABILITY = 'manage_woocommerce';
@@ -31,19 +31,11 @@ final class Plugin {
 	public const META_SQS_ID     = 'vio-sqs-id';
 	public const META_ORIGIN     = 'vio-origin';
 
-	/**
-	 * Legacy Reachu meta key. After creating a product the backend writes its
-	 * Vio id back into the WooCommerce post under this key (the old plugin's
-	 * name). The plugin reads it and backfills META_PRODUCT_ID — see
-	 * Store_Status::reconcile_remote_ids().
-	 */
-	public const META_LEGACY_PRODUCT_ID = 'reachu-product-id';
-
 	/** Names of the order webhooks managed by Vio. */
 	public const WEBHOOK_NAMES = [ 'Vio order.created', 'Vio order.updated' ];
 
 	/** Identifier text for the REST API keys created for Vio. */
-	public const API_KEY_DESCRIPTION = 'Vio WooCommerce Sync';
+	public const API_KEY_DESCRIPTION = 'Vio Sync for WooCommerce';
 
 	/**
 	 * Bootstrap: runs on plugins_loaded.
@@ -54,11 +46,8 @@ final class Plugin {
 			return;
 		}
 
-		load_plugin_textdomain(
-			self::TEXT_DOMAIN,
-			false,
-			dirname( VIO_WC_SYNC_BASENAME ) . '/languages'
-		);
+		// Translations are auto-loaded just-in-time by WordPress.org for hosted
+		// plugins (since WP 4.6), so no load_plugin_textdomain() call is needed.
 
 		Config_Page::init();
 		Products_Table::init();
@@ -68,7 +57,7 @@ final class Plugin {
 	public static function woocommerce_missing_notice(): void {
 		printf(
 			'<div class="notice notice-error"><p>%s</p></div>',
-			esc_html__( 'Vio WooCommerce Sync requires WooCommerce to be installed and active.', 'vio-woocommerce-sync' )
+			esc_html__( 'Vio Sync for WooCommerce requires WooCommerce to be installed and active.', 'vio-sync-for-woocommerce' )
 		);
 	}
 
@@ -126,7 +115,7 @@ final class Plugin {
 		$table = $wpdb->prefix . 'woocommerce_api_keys';
 		$like  = '%' . $wpdb->esc_like( self::API_KEY_DESCRIPTION ) . '%';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $table is $wpdb->prefix . a literal; the LIKE value is prepared. One-off admin cleanup, caching N/A.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare( "SELECT key_id FROM {$table} WHERE description LIKE %s", $like )
 		);
@@ -135,5 +124,6 @@ final class Plugin {
 			$wpdb->delete( $table, [ 'key_id' => $row->key_id ], [ '%d' ] );
 			Logger::info( 'REST API key removed: ' . $row->key_id );
 		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 }

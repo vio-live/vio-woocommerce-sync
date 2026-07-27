@@ -1,0 +1,23 @@
+# Files and directories excluded from the published WordPress.org build.
+# Used by 10up/action-wordpress-plugin-deploy and the local build script.
+
+/.git
+/.github
+/.gitignore
+/.distignore
+/.wordpress-org
+/.editorconfig
+/.phpunit.result.cache
+/phpunit.xml.dist
+/phpcs.xml.dist
+/composer.json
+/composer.lock
+/package.json
+/package-lock.json
+/tests
+/docs
+/node_modules
+/vendor
+.DS_Store
+*.zip
+*.log

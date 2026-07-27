@@ -58,7 +58,7 @@ final class Logger {
 		$table = $wpdb->prefix . 'woocommerce_log';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $table is $wpdb->prefix . a literal; values are prepared.
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT timestamp, level, message FROM {$table} WHERE source = %s ORDER BY log_id DESC LIMIT %d",
@@ -66,6 +66,7 @@ final class Logger {
 					$limit
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			if ( $rows ) {
 				return array_map(
 					static function ( $r ) {

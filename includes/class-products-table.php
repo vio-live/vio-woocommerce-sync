@@ -31,7 +31,7 @@ final class Products_Table {
 	}
 
 	public static function enqueue( string $hook ): void {
-		$post_type = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
+		$post_type = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only screen check (which list table we are on), no state change.
 		if ( 'product' !== $post_type ) {
 			return;
 		}
@@ -53,7 +53,7 @@ final class Products_Table {
 	}
 
 	public static function add_column( array $columns ): array {
-		$columns[ self::COLUMN ] = esc_html__( 'Vio', 'vio-woocommerce-sync' );
+		$columns[ self::COLUMN ] = esc_html__( 'Vio', 'vio-sync-for-woocommerce' );
 		return $columns;
 	}
 
@@ -74,19 +74,20 @@ final class Products_Table {
 			printf(
 				'<img class="vio-icon" src="%s" alt="%s" title="%s" width="20" />',
 				esc_url( VIO_WC_SYNC_URL . 'assets/img/icon.svg' ),
-				esc_attr__( 'Synced with Vio', 'vio-woocommerce-sync' ),
-				esc_attr__( 'Synced with Vio', 'vio-woocommerce-sync' )
+				esc_attr__( 'Synced with Vio', 'vio-sync-for-woocommerce' ),
+				esc_attr__( 'Synced with Vio', 'vio-sync-for-woocommerce' )
 			);
 		} elseif ( $sqs_id ) {
 			echo '<span class="vio-syncing" title="'
-				. esc_attr__( 'Sent to Vio — waiting for it to finish processing the product.', 'vio-woocommerce-sync' )
-				. '">' . esc_html__( 'Sent', 'vio-woocommerce-sync' ) . '</span>';
+				. esc_attr__( 'Sent to Vio — waiting for it to finish processing the product.', 'vio-sync-for-woocommerce' )
+				. '">' . esc_html__( 'Sent', 'vio-sync-for-woocommerce' ) . '</span>';
 		}
 	}
 
 	public static function add_bulk_actions( array $actions ): array {
-		$actions['vio_sync']   = __( 'Vio Sync', 'vio-woocommerce-sync' );
-		$actions['vio_delete'] = __( 'Delete from Vio', 'vio-woocommerce-sync' );
+		$actions['vio_sync']   = __( 'Sync', 'vio-sync-for-woocommerce' );
+		$actions['vio_unsync'] = __( 'Unsync', 'vio-sync-for-woocommerce' );
+		$actions['vio_delete'] = __( 'Delete from Vio', 'vio-sync-for-woocommerce' );
 		return $actions;
 	}
 

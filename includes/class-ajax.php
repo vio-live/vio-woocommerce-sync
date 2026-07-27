@@ -17,6 +17,7 @@ final class Ajax {
 	public static function init(): void {
 		add_action( 'wp_ajax_vio_sync', [ self::class, 'sync' ] );
 		add_action( 'wp_ajax_vio_delete', [ self::class, 'delete' ] );
+		add_action( 'wp_ajax_vio_unsync', [ self::class, 'unsync' ] );
 		add_action( 'wp_ajax_vio_finish_sync', [ self::class, 'finish_sync' ] );
 		add_action( 'wp_ajax_vio_save_settings', [ self::class, 'save_settings' ] );
 		add_action( 'wp_ajax_vio_logout', [ self::class, 'logout' ] );
@@ -37,7 +38,8 @@ final class Ajax {
 
 	/** @return int[] */
 	private static function post_ids(): array {
-		$ids = isset( $_POST['id_posts'] ) ? (array) wp_unslash( $_POST['id_posts'] ) : []; // phpcs:ignore WordPress.Security.NonceVerification
+		// The caller verifies the nonce (check_ajax_referer); every id is absint()'d below.
+		$ids = isset( $_POST['id_posts'] ) ? (array) wp_unslash( $_POST['id_posts'] ) : []; // phpcs:ignore WordPress.Security.NonceVerification, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		return array_values( array_filter( array_map( 'absint', $ids ) ) );
 	}
 
@@ -83,6 +85,29 @@ final class Ajax {
 		}
 
 		Logger::info( '[delete] unlinked posts ' . implode( ',', $post_ids ) );
+		wp_send_json_success();
+	}
+
+	/**
+	 * Bulk "Unsync": unlink the selected products from Vio — clear the local sync
+	 * link so the plugin stops tracking/updating them — but leave them in Vio.
+	 * The reverse of a sync, without the remote delete that "Delete from Vio" does.
+	 */
+	public static function unsync(): void {
+		check_ajax_referer( 'vio_sync', 'nonce' );
+		self::guard();
+
+		$post_ids = self::post_ids();
+		$api_key  = Api_Client::api_key();
+		if ( empty( $post_ids ) || '' === $api_key ) {
+			wp_send_json_error( [ 'message' => 'no_ids' ] );
+		}
+
+		foreach ( $post_ids as $post_id ) {
+			Sync::delete_by_post( $post_id, $api_key, false );
+		}
+
+		Logger::info( '[unsync] unlinked posts ' . implode( ',', $post_ids ) );
 		wp_send_json_success();
 	}
 
@@ -134,7 +159,7 @@ final class Ajax {
 
 		// A currency is required to connect — prices can't sync without one.
 		if ( '' === $currency ) {
-			wp_send_json_error( array( 'message' => __( 'Select a currency before connecting.', 'vio-woocommerce-sync' ) ) );
+			wp_send_json_error( array( 'message' => __( 'Select a currency before connecting.', 'vio-sync-for-woocommerce' ) ) );
 		}
 
 		Store_Status::save_options( $apikey, $env, $currency );

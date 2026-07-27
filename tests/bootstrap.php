@@ -32,6 +32,6 @@ if ( ! defined( 'WP_USE_THEMES' ) ) {
 require $wp_load;
 
 if ( ! class_exists( \Vio\WooSync\Config_Page::class ) ) {
-	fwrite( STDERR, "vio tests: plugin not loaded (is Vio WooCommerce Sync active?).\n" );
+	fwrite( STDERR, "vio tests: plugin not loaded (is Vio Sync for WooCommerce active?).\n" );
 	exit( 1 );
 }

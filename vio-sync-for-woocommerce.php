@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:          Vio WooCommerce Sync
+ * Plugin Name:          Vio Sync for WooCommerce
  * Plugin URI:           https://vio.live/
  * Description:          Sync WooCommerce products to the Vio platform (inventory, prices, variants and images).
  * Version:              1.0.0
@@ -10,11 +10,11 @@
  * Author URI:           https://vio.live/
  * License:              GPL-2.0-or-later
  * License URI:          https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:          vio-woocommerce-sync
+ * Text Domain:          vio-sync-for-woocommerce
  * Domain Path:          /languages
  * Requires Plugins:     woocommerce
  * WC requires at least: 8.0
- * WC tested up to:      9.5
+ * WC tested up to:      10.9
  *
  * @package Vio\WooSync
  */

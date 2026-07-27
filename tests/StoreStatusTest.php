@@ -180,54 +180,6 @@ final class StoreStatusTest extends TestCase {
 		$this->assertStringContainsString( '500', $msg( true, false, 500 ) );
 	}
 
-	/* ---- reconcile_remote_ids(): link the backend's legacy write-back ---- */
-
-	/** A product carrying only the legacy reachu-product-id is linked into vio-product-id (idempotently). */
-	public function test_reconcile_links_legacy_writeback(): void {
-		$post_id = wp_insert_post( array(
-			'post_type'   => 'product',
-			'post_status' => 'publish',
-			'post_title'  => 'vio-test-reconcile',
-		) );
-		$this->assertGreaterThan( 0, $post_id );
-
-		try {
-			update_post_meta( $post_id, Plugin::META_LEGACY_PRODUCT_ID, '987654' );
-			$this->assertSame( '', (string) get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true ), 'precondition: not yet linked' );
-
-			$linked = Store_Status::reconcile_remote_ids();
-			$this->assertGreaterThanOrEqual( 1, $linked );
-			$this->assertSame( '987654', (string) get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true ), 'vio-product-id is backfilled from the legacy key' );
-
-			// Idempotent: a second run leaves the value untouched.
-			Store_Status::reconcile_remote_ids();
-			$this->assertSame( '987654', (string) get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true ) );
-		} finally {
-			wp_delete_post( $post_id, true );
-		}
-	}
-
-	/** An existing vio-product-id is never overwritten by the legacy key. */
-	public function test_reconcile_does_not_overwrite_existing_id(): void {
-		$post_id = wp_insert_post( array(
-			'post_type'   => 'product',
-			'post_status' => 'publish',
-			'post_title'  => 'vio-test-reconcile-keep',
-		) );
-		$this->assertGreaterThan( 0, $post_id );
-
-		try {
-			update_post_meta( $post_id, Plugin::META_PRODUCT_ID, 'keep-me' );
-			update_post_meta( $post_id, Plugin::META_LEGACY_PRODUCT_ID, 'override' );
-
-			Store_Status::reconcile_remote_ids();
-
-			$this->assertSame( 'keep-me', (string) get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true ), 'an existing id must win over the legacy key' );
-		} finally {
-			wp_delete_post( $post_id, true );
-		}
-	}
-
 	/* ---- unlink_all_products(): disconnect hygiene ---- */
 
 	/** Disconnect drops the sync meta from every product but keeps non-link meta. */
@@ -239,7 +191,6 @@ final class StoreStatusTest extends TestCase {
 
 		try {
 			update_post_meta( $a, Plugin::META_PRODUCT_ID, '111' );
-			update_post_meta( $a, Plugin::META_LEGACY_PRODUCT_ID, '111' );
 			update_post_meta( $a, Plugin::META_SQS_ID, 'sqs-a' );
 			update_post_meta( $b, Plugin::META_SQS_ID, 'sqs-b' );
 			// Not a sync-link meta — must survive a disconnect.
@@ -248,7 +199,7 @@ final class StoreStatusTest extends TestCase {
 			$cleared = Sync::unlink_all_products();
 			$this->assertGreaterThanOrEqual( 2, $cleared );
 
-			foreach ( array( Plugin::META_PRODUCT_ID, Plugin::META_LEGACY_PRODUCT_ID, Plugin::META_SQS_ID ) as $meta ) {
+			foreach ( array( Plugin::META_PRODUCT_ID, Plugin::META_SQS_ID ) as $meta ) {
 				$this->assertSame( '', (string) get_post_meta( $a, $meta, true ), "{$meta} must be cleared" );
 			}
 			$this->assertSame( '', (string) get_post_meta( $b, Plugin::META_SQS_ID, true ) );

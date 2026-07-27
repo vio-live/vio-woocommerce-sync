@@ -4,20 +4,19 @@ What the Vio backend must expose for each plugin feature. This is the
 plugin → backend contract: every call the plugin makes today, its payload, the
 response it expects, and the one gap that blocks a full sync.
 
-> **Update 2026-06-12 — the product-id gap is RESOLVED (plugin side).** The
-> backend already writes the created Vio id back into each product under the
-> legacy `reachu-product-id` meta; the plugin now consumes it, and falls back to
+> **Update — the product-id gap is RESOLVED.** The backend writes the created
+> Vio id straight into each product's `vio-product-id` meta over the store's REST
+> API (since 2026-07-17); the plugin reads it directly, and falls back to
 > `GET /api/product/validate-synced/{origin}?originIds=` for any product the
 > write-back hasn't reached. "Sent → Synced" works end-to-end. The remaining
 > **backend** item is product **activation** — synced products land with
-> `vioActive:false` and nothing in the sync flow publishes them. Detail in the
-> handbook journal `2026-06-12-woo.md`.
+> `vioActive:false` and nothing in the sync flow publishes them.
 
-Today the plugin talks to the **Reachu** API (`api-ecom.vio.live` prod /
-`api-ecom-staging.vio.live` staging). The target is **`api-commerce.vio.live`**. The
-plugin is already env-agnostic (a `wp-config` constant or the
-`vio_wc_sync_api_base` filter repoints it with zero code change), so "the Vio
-backend" below means "whatever host `Api_Client::base_url()` resolves to".
+The plugin talks to the **Vio commerce** API (`api-ecom.vio.live` prod /
+`api-ecom-staging.vio.live` staging). The plugin is env-agnostic (a `wp-config`
+constant or the `vio_wc_sync_api_base` filter repoints it with zero code
+change), so "the Vio backend" below means "whatever host
+`Api_Client::base_url()` resolves to".
 
 ## Conventions
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   Vio WooCommerce Sync — configuration page
+   Vio Sync for WooCommerce — configuration page
    Light mode only (WooCommerce admin has no dark theme).
    Palette: greys + Vio green. No blue, no amber.
    ============================================================ */
@@ -37,7 +37,7 @@
 }
 
 .vio-config__brand { display: flex; align-items: center; gap: 12px; }
-.vio-config__logo { display: block; border-radius: 7px; }
+.vio-config__logo { display: block; height: 26px; width: auto; }
 .vio-config__wordmark { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; color: var(--vio-ink); }
 .vio-config__sep { width: 1px; height: 20px; background: var(--vio-line); }
 .vio-config__subtitle { font-size: 15px; color: var(--vio-muted); }

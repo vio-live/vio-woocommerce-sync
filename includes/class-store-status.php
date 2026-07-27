@@ -68,13 +68,13 @@ final class Store_Status {
 		$status = (int) ( $state['status'] ?? 0 );
 		if ( in_array( $status, array( 401, 403 ), true ) ) {
 			/* translators: %d: HTTP status code */
-			return sprintf( __( 'Your Vio API key was rejected (HTTP %d). Paste the correct key under Settings and save.', 'vio-woocommerce-sync' ), $status );
+			return sprintf( __( 'Your Vio API key was rejected (HTTP %d). Paste the correct key under Settings and save.', 'vio-sync-for-woocommerce' ), $status );
 		}
 		if ( 0 === $status ) {
-			return __( 'Could not reach Vio (network error). Check the connection and re-check.', 'vio-woocommerce-sync' );
+			return __( 'Could not reach Vio (network error). Check the connection and re-check.', 'vio-sync-for-woocommerce' );
 		}
 		/* translators: %d: HTTP status code */
-		return sprintf( __( 'Vio returned HTTP %d. Verify the key and environment, then re-check.', 'vio-woocommerce-sync' ), $status );
+		return sprintf( __( 'Vio returned HTTP %d. Verify the key and environment, then re-check.', 'vio-sync-for-woocommerce' ), $status );
 	}
 
 	/**
@@ -121,60 +121,23 @@ final class Store_Status {
 	}
 
 	/**
-	 * Link products the backend already created. After a product is created the
-	 * backend writes its Vio id back into the WooCommerce post under the legacy
-	 * `reachu-product-id` meta (the old plugin's key); copy it into
-	 * META_PRODUCT_ID so the Sent→Synced transition, the sync stats and the
-	 * auto-update/delete flows — all keyed on META_PRODUCT_ID — work.
+	 * Link products the backend created but whose id hasn't reached the store yet.
+	 * The backend writes the Vio id straight into META_PRODUCT_ID over the store's
+	 * REST API, so most products are already linked; for any still "Sent", ask the
+	 * validate-synced endpoint by origin id and backfill META_PRODUCT_ID.
 	 *
-	 * Idempotent and cheap (one indexed query, a write only for new matches),
-	 * so it is safe to call on every page load and stats fetch.
+	 * Cheap and idempotent — skips the network call entirely when nothing is
+	 * pending — so it is safe to call on every page load and stats fetch.
 	 *
 	 * @return int Number of products linked this run.
 	 */
 	public static function reconcile_remote_ids(): int {
-		// 1) Free fast-path: the backend's write-back into the legacy meta.
-		$linked = self::reconcile_from_writeback();
-
-		// 2) Fallback: ask the backend which still-queued products are synced.
-		//    Only fires a request when something is actually pending.
-		if ( Api_Client::has_api_key() ) {
-			$linked += self::reconcile_from_lookup();
-		}
+		$linked = Api_Client::has_api_key() ? self::reconcile_from_lookup() : 0;
 
 		if ( $linked > 0 ) {
 			Logger::info( '[reconcile] linked ' . $linked . ' product(s) to Vio' );
 		}
 		return $linked;
-	}
-
-	/**
-	 * Fast-path: the backend writes the Vio id into the legacy `reachu-product-id`
-	 * meta; copy it into META_PRODUCT_ID. Pure local query — no network.
-	 */
-	private static function reconcile_from_writeback(): int {
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT legacy.post_id AS post_id, legacy.meta_value AS remote_id
-				   FROM {$wpdb->postmeta} legacy
-				  WHERE legacy.meta_key = %s AND legacy.meta_value <> ''
-				    AND NOT EXISTS (
-				        SELECT 1 FROM {$wpdb->postmeta} synced
-				         WHERE synced.post_id = legacy.post_id
-				           AND synced.meta_key = %s AND synced.meta_value <> ''
-				    )",
-				Plugin::META_LEGACY_PRODUCT_ID,
-				Plugin::META_PRODUCT_ID
-			)
-		);
-
-		foreach ( (array) $rows as $row ) {
-			update_post_meta( (int) $row->post_id, Plugin::META_PRODUCT_ID, (string) $row->remote_id );
-		}
-		return count( (array) $rows );
 	}
 
 	/**
@@ -306,8 +269,8 @@ final class Store_Status {
 			'WooCommerce'  => defined( 'WC_VERSION' ) ? WC_VERSION : '—',
 			'WordPress'    => get_bloginfo( 'version' ),
 			'PHP'          => PHP_VERSION,
-			'HPOS'         => $hpos ? __( 'enabled', 'vio-woocommerce-sync' ) : __( 'disabled', 'vio-woocommerce-sync' ),
-			'Env override' => '' !== $override ? $override : __( 'none', 'vio-woocommerce-sync' ),
+			'HPOS'         => $hpos ? __( 'enabled', 'vio-sync-for-woocommerce' ) : __( 'disabled', 'vio-sync-for-woocommerce' ),
+			'Env override' => '' !== $override ? $override : __( 'none', 'vio-sync-for-woocommerce' ),
 		];
 	}
 

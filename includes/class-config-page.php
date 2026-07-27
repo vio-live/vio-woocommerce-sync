@@ -6,6 +6,12 @@
  * The screen renders its initial state server-side and is progressively
  * enhanced by assets/js/config.js (save, re-check, sync-all, live stats).
  *
+ * Output note: every dynamic value below is escaped at the point of output
+ * (esc_html / esc_attr / esc_url) or is hard-coded inline SVG produced by
+ * self::icon(). The few `phpcs:ignore` annotations mark those inline SVG
+ * icons and pre-escaped markup — wrapping the SVG in wp_kses() would lower-case
+ * the `viewBox` attribute and break icon scaling.
+ *
  * @package Vio\WooSync
  */
 
@@ -25,17 +31,26 @@ final class Config_Page {
 	}
 
 	/**
-	 * White Vio mark, inlined as a data URI so it shows on the dark admin menu.
+	 * The admin-menu mark. It sits on the dark sidebar, so it uses a dedicated
+	 * white icon (assets/img/icon-white.svg), inlined as a data URI — replacing
+	 * that file updates the menu. Falls back to a built-in white mark if it can't
+	 * be read. (The colour icon.svg is used on the config page + product column.)
 	 */
 	private static function menu_icon(): string {
-		$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
-			. '<path d="M13 15l11 19 11-19" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>'
-			. '</svg>';
+		$file = VIO_WC_SYNC_DIR . 'assets/img/icon-white.svg';
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reading a bundled local asset, not a remote URL.
+		$svg  = is_readable( $file ) ? (string) file_get_contents( $file ) : '';
+		if ( '' === $svg ) {
+			$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
+				. '<path d="M13 15l11 19 11-19" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>'
+				. '</svg>';
+		}
 		return 'data:image/svg+xml;base64,' . base64_encode( $svg );
 	}
 
 	/**
 	 * Inline outline icon (Feather, MIT). Stroke inherits the current text colour.
+	 * Returns hard-coded SVG markup; only the class name is dynamic and escaped.
 	 */
 	private static function icon( string $name ): string {
 		$paths = array(
@@ -59,8 +74,8 @@ final class Config_Page {
 
 	public static function register_menu(): void {
 		add_menu_page(
-			__( 'Vio', 'vio-woocommerce-sync' ),
-			__( 'Vio', 'vio-woocommerce-sync' ),
+			__( 'Vio', 'vio-sync-for-woocommerce' ),
+			__( 'Vio', 'vio-sync-for-woocommerce' ),
 			Plugin::CAPABILITY,
 			self::MENU_SLUG,
 			[ self::class, 'render' ],
@@ -71,8 +86,8 @@ final class Config_Page {
 		// Rename the auto-created first submenu item from "Vio" to "Configuration".
 		add_submenu_page(
 			self::MENU_SLUG,
-			__( 'Configuration', 'vio-woocommerce-sync' ),
-			__( 'Configuration', 'vio-woocommerce-sync' ),
+			__( 'Configuration', 'vio-sync-for-woocommerce' ),
+			__( 'Configuration', 'vio-sync-for-woocommerce' ),
 			Plugin::CAPABILITY,
 			self::MENU_SLUG,
 			[ self::class, 'render' ]
@@ -107,7 +122,7 @@ final class Config_Page {
 
 	public static function render(): void {
 		if ( ! current_user_can( Plugin::CAPABILITY ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'vio-woocommerce-sync' ) );
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'vio-sync-for-woocommerce' ) );
 		}
 
 		// Render fast: no blocking network call here. The connection card starts in
@@ -119,15 +134,15 @@ final class Config_Page {
 		echo '<div class="wrap vio-config">';
 		self::render_header( $state );
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only post-redirect flag, no state change.
 		if ( isset( $_GET['vio_disconnected'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only post-redirect flag, no state change.
 			$deleted = isset( $_GET['vio_deleted'] ) ? absint( wp_unslash( $_GET['vio_deleted'] ) ) : 0;
 			$alert   = $deleted
 				/* translators: %d: number of products also deleted from Vio */
-				? sprintf( esc_html__( 'Store disconnected from Vio — removed the API key, REST keys, order webhooks and %d product(s) from Vio.', 'vio-woocommerce-sync' ), $deleted )
-				: esc_html__( 'Store disconnected from Vio — removed the API key, REST keys and order webhooks.', 'vio-woocommerce-sync' );
-			echo '<div class="vio-notice vio-notice--ok vio-config__alert">' . $alert . '</div>';
+				? sprintf( __( 'Store disconnected from Vio — removed the API key, REST keys, order webhooks and %d product(s) from Vio.', 'vio-sync-for-woocommerce' ), $deleted )
+				: __( 'Store disconnected from Vio — removed the API key, REST keys and order webhooks.', 'vio-sync-for-woocommerce' );
+			echo '<div class="vio-notice vio-notice--ok vio-config__alert">' . esc_html( $alert ) . '</div>';
 		}
 
 		echo '<div class="vio-config__grid">';
@@ -162,47 +177,53 @@ final class Config_Page {
 
 		if ( ! empty( $state['pending'] ) && $state['has_key'] ) {
 			$badge = 'idle';
-			$label = __( 'Checking…', 'vio-woocommerce-sync' );
+			$label = __( 'Checking…', 'vio-sync-for-woocommerce' );
 		} elseif ( $state['connected'] ) {
 			$badge = 'ok';
-			$label = sprintf( /* translators: %s: environment */ __( 'Connected · %s', 'vio-woocommerce-sync' ), $env );
+			$label = sprintf( /* translators: %s: environment */ __( 'Connected · %s', 'vio-sync-for-woocommerce' ), $env );
 		} elseif ( $state['has_key'] ) {
 			$badge = 'warn';
-			$label = __( 'Not connected', 'vio-woocommerce-sync' );
+			$label = __( 'Not connected', 'vio-sync-for-woocommerce' );
 		} else {
 			$badge = 'idle';
-			$label = __( 'Not configured', 'vio-woocommerce-sync' );
+			$label = __( 'Not configured', 'vio-sync-for-woocommerce' );
 		}
+
+		// Brand: the plugin's logo (assets/img/icon.svg). The logo carries the
+		// name, so there's no separate "Vio" wordmark.
+		$brand = sprintf(
+			'<img class="vio-config__logo" src="%s" alt="Vio" />',
+			esc_url( VIO_WC_SYNC_URL . 'assets/img/icon.svg' )
+		);
 
 		printf(
 			'<div class="vio-config__head">
 				<div class="vio-config__brand">
-					<img class="vio-config__logo" src="%1$s" alt="Vio" width="30" height="30" />
-					<span class="vio-config__wordmark">Vio</span>
+					%1$s
 					<span class="vio-config__sep"></span>
 					<span class="vio-config__subtitle">%2$s</span>
 				</div>
 				<span class="vio-badge vio-badge--%3$s"><span class="vio-dot"></span>%4$s</span>
 			</div>',
-			esc_url( VIO_WC_SYNC_URL . 'assets/img/icon.svg' ),
-			esc_html__( 'Configuration', 'vio-woocommerce-sync' ),
+			$brand, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_url() + literal markup.
+			esc_html__( 'Configuration', 'vio-sync-for-woocommerce' ),
 			esc_attr( $badge ),
 			esc_html( $label )
 		);
 	}
 
 	private static function render_connection( array $state ): void {
-		$env       = Api_Client::environment();
+		$env        = Api_Client::environment();
 		$host       = (string) wp_parse_url( Api_Client::base_url(), PHP_URL_HOST );
 		$user       = $state['user'];
 		$account    = $user && isset( $user->username ) ? (string) $user->username : ( $user && isset( $user->email ) ? (string) $user->email : '—' );
 		$disconnect = wp_nonce_url( admin_url( 'admin-ajax.php?action=vio_logout' ), 'vio_logout' );
 
 		echo '<section class="vio-card vio-card--connection" id="vio-connection">';
-		echo '<h2 class="vio-card__title">' . self::icon( 'link' ) . '' . esc_html__( 'Connection', 'vio-woocommerce-sync' ) . '</h2>';
+		echo '<h2 class="vio-card__title">' . self::icon( 'link' ) . esc_html__( 'Connection', 'vio-sync-for-woocommerce' ) . '</h2>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
 
 		if ( ! $state['has_key'] ) {
-			echo '<p class="vio-muted">' . esc_html__( 'Enter your API key below and save to connect this store with Vio.', 'vio-woocommerce-sync' ) . '</p>';
+			echo '<p class="vio-muted">' . esc_html__( 'Enter your API key below and save to connect this store with Vio.', 'vio-sync-for-woocommerce' ) . '</p>';
 			echo '</section>';
 			return;
 		}
@@ -221,45 +242,45 @@ final class Config_Page {
 
 		$ok       = '<span class="vio-ok"><span class="vio-dot"></span>%s</span>';
 		$bad      = '<span class="vio-bad">%s</span>';
-		$checking = '<span class="vio-skeleton" aria-label="' . esc_attr__( 'Checking…', 'vio-woocommerce-sync' ) . '"></span>';
+		$checking = '<span class="vio-skeleton" aria-label="' . esc_attr__( 'Checking…', 'vio-sync-for-woocommerce' ) . '"></span>';
 
 		echo '<dl class="vio-kv">';
-		self::kv( __( 'Account', 'vio-woocommerce-sync' ), $pending ? $checking : esc_html( $account ), 'account' );
-		self::kv( __( 'Environment', 'vio-woocommerce-sync' ), esc_html( ucfirst( $env ) ), 'environment' );
-		self::kv( __( 'API endpoint', 'vio-woocommerce-sync' ), '<code>' . esc_html( $host ) . '</code>', 'host' );
+		self::kv( __( 'Account', 'vio-sync-for-woocommerce' ), $pending ? $checking : esc_html( $account ), 'account' );
+		self::kv( __( 'Environment', 'vio-sync-for-woocommerce' ), esc_html( ucfirst( $env ) ), 'environment' );
+		self::kv( __( 'API endpoint', 'vio-sync-for-woocommerce' ), '<code>' . esc_html( $host ) . '</code>', 'host' );
 		self::kv(
-			__( 'API health', 'vio-woocommerce-sync' ),
+			__( 'API health', 'vio-sync-for-woocommerce' ),
 			$pending ? $checking : (
 				$state['reachable']
-					? sprintf( $ok, sprintf( /* translators: %d: milliseconds */ esc_html__( 'Reachable · %d ms', 'vio-woocommerce-sync' ), (int) $state['latency'] ) )
-					: sprintf( $bad, esc_html__( 'Unreachable', 'vio-woocommerce-sync' ) )
+					? sprintf( $ok, sprintf( /* translators: %d: milliseconds */ esc_html__( 'Reachable · %d ms', 'vio-sync-for-woocommerce' ), (int) $state['latency'] ) )
+					: sprintf( $bad, esc_html__( 'Unreachable', 'vio-sync-for-woocommerce' ) )
 			),
 			'health'
 		);
 		self::kv(
-			__( 'Order webhooks', 'vio-woocommerce-sync' ),
-			$pending ? $checking : ( $state['connected'] ? sprintf( $ok, esc_html__( 'Active', 'vio-woocommerce-sync' ) ) : sprintf( $bad, esc_html__( 'Not set up', 'vio-woocommerce-sync' ) ) ),
+			__( 'Order webhooks', 'vio-sync-for-woocommerce' ),
+			$pending ? $checking : ( $state['connected'] ? sprintf( $ok, esc_html__( 'Active', 'vio-sync-for-woocommerce' ) ) : sprintf( $bad, esc_html__( 'Not set up', 'vio-sync-for-woocommerce' ) ) ),
 			'webhooks'
 		);
 		self::kv(
-			__( 'API key', 'vio-woocommerce-sync' ),
+			__( 'API key', 'vio-sync-for-woocommerce' ),
 			$pending ? $checking : (
 				$state['valid']
-					? sprintf( $ok, esc_html__( 'Valid', 'vio-woocommerce-sync' ) )
+					? sprintf( $ok, esc_html__( 'Valid', 'vio-sync-for-woocommerce' ) )
 					: ( in_array( (int) $state['status'], array( 401, 403 ), true )
 						/* translators: %d: HTTP status code */
-						? sprintf( $bad, sprintf( esc_html__( 'Rejected (HTTP %d)', 'vio-woocommerce-sync' ), (int) $state['status'] ) )
-						: sprintf( $bad, esc_html__( 'Not verified', 'vio-woocommerce-sync' ) ) )
+						? sprintf( $bad, sprintf( esc_html__( 'Rejected (HTTP %d)', 'vio-sync-for-woocommerce' ), (int) $state['status'] ) )
+						: sprintf( $bad, esc_html__( 'Not verified', 'vio-sync-for-woocommerce' ) ) )
 			),
 			'restkey'
 		);
 		echo '</dl>';
 
 		echo '<div class="vio-card__actions">';
-		echo '<button type="button" class="button vio-btn" id="vio-recheck"><span class="vio-spinner"></span>' . self::icon( 'refresh' ) . '' . esc_html__( 'Re-check', 'vio-woocommerce-sync' ) . '</button>';
+		echo '<button type="button" class="button vio-btn" id="vio-recheck"><span class="vio-spinner"></span>' . self::icon( 'refresh' ) . esc_html__( 'Re-check', 'vio-sync-for-woocommerce' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
 
 		if ( $state['has_key'] ) {
-			echo '<a class="button vio-btn vio-btn--danger" id="vio-disconnect" href="' . esc_url( $disconnect ) . '">' . esc_html__( 'Disconnect', 'vio-woocommerce-sync' ) . '</a>';
+			echo '<a class="button vio-btn vio-btn--danger" id="vio-disconnect" href="' . esc_url( $disconnect ) . '">' . esc_html__( 'Disconnect', 'vio-sync-for-woocommerce' ) . '</a>';
 		}
 		echo '</div>';
 
@@ -275,40 +296,39 @@ final class Config_Page {
 		// Once a key is saved the store is connected: lock the settings so they
 		// can't be changed by accident. To edit, disconnect first (Connection card).
 		$locked     = ! empty( $state['has_key'] );
-		$dis        = $locked ? ' disabled' : '';
 
 		echo '<section class="vio-card vio-card--settings">';
-		echo '<h2 class="vio-card__title">' . self::icon( 'sliders' ) . '' . esc_html__( 'Settings', 'vio-woocommerce-sync' ) . '</h2>';
+		echo '<h2 class="vio-card__title">' . self::icon( 'sliders' ) . esc_html__( 'Settings', 'vio-sync-for-woocommerce' ) . '</h2>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
 		echo '<form id="vio-settings-form" class="vio-form">';
 
 		// API key.
-		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'API key', 'vio-woocommerce-sync' ) . '</span>';
+		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'API key', 'vio-sync-for-woocommerce' ) . '</span>';
 		echo '<span class="vio-field__control vio-field__control--key">';
 		printf(
 			'<input type="password" id="vio-apikey" name="apikey" value="%s" autocomplete="off" spellcheck="false"%s />',
 			esc_attr( $api_key ),
-			$dis
+			$locked ? ' disabled' : ''
 		);
-		echo '<button type="button" class="vio-reveal" id="vio-reveal" aria-label="' . esc_attr__( 'Show or hide the API key', 'vio-woocommerce-sync' ) . '">' . self::icon( 'eye' ) . self::icon( 'eye-off' ) . '</button>';
+		echo '<button type="button" class="vio-reveal" id="vio-reveal" aria-label="' . esc_attr__( 'Show or hide the API key', 'vio-sync-for-woocommerce' ) . '">' . self::icon( 'eye' ) . self::icon( 'eye-off' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icons.
 		echo '</span></label>';
 
 		// Environment.
-		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'Environment', 'vio-woocommerce-sync' ) . '</span>';
+		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'Environment', 'vio-sync-for-woocommerce' ) . '</span>';
 		echo '<span class="vio-field__control">';
 		printf( '<select id="vio-environment" name="environment"%s>', ( $env_locked || $locked ) ? ' disabled' : '' );
-		foreach ( [ 'production' => __( 'Production', 'vio-woocommerce-sync' ), 'staging' => __( 'Staging', 'vio-woocommerce-sync' ) ] as $value => $text ) {
+		foreach ( [ 'production' => __( 'Production', 'vio-sync-for-woocommerce' ), 'staging' => __( 'Staging', 'vio-sync-for-woocommerce' ) ] as $value => $text ) {
 			printf( '<option value="%s"%s>%s</option>', esc_attr( $value ), selected( $env, $value, false ), esc_html( $text ) );
 		}
 		echo '</select>';
 		if ( $env_locked ) {
-			echo '<span class="vio-hint">' . esc_html__( 'Locked by the VIO_WC_SYNC_ENV constant in wp-config.php.', 'vio-woocommerce-sync' ) . '</span>';
+			echo '<span class="vio-hint">' . esc_html__( 'Locked by the VIO_WC_SYNC_ENV constant in wp-config.php.', 'vio-sync-for-woocommerce' ) . '</span>';
 		}
 		echo '</span></label>';
 
 		// Currency.
-		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'Currency', 'vio-woocommerce-sync' ) . '</span>';
+		echo '<label class="vio-field"><span class="vio-field__label">' . esc_html__( 'Currency', 'vio-sync-for-woocommerce' ) . '</span>';
 		echo '<span class="vio-field__control">';
-		echo '<select id="vio-currency" name="currency"' . $dis . '>';
+		echo '<select id="vio-currency" name="currency"' . ( $locked ? ' disabled' : '' ) . '>';
 		foreach ( $currencies as $code => $text ) {
 			printf( '<option value="%s"%s>%s</option>', esc_attr( $code ), selected( $currency, $code, false ), esc_html( $text ) );
 		}
@@ -317,14 +337,14 @@ final class Config_Page {
 		// One-step Connect when there's no key yet. Once a key is saved the form is
 		// locked ($locked above) — to change a setting, disconnect and reconnect.
 		if ( $locked ) {
-			echo '<p class="vio-hint">' . esc_html__( 'Connected — disconnect to change the key, environment or currency.', 'vio-woocommerce-sync' ) . '</p>';
+			echo '<p class="vio-hint">' . esc_html__( 'Connected — disconnect to change the key, environment or currency.', 'vio-sync-for-woocommerce' ) . '</p>';
 		}
 		echo '<div class="vio-card__actions">';
 		printf(
 			'<button type="submit" class="button button-primary vio-btn vio-btn--primary" id="vio-save" data-action="connect"%s><span class="vio-spinner"></span>%s<span class="vio-save-label">%s</span></button>',
-			$dis,
-			$locked ? '' : self::icon( 'link' ),
-			esc_html__( 'Connect', 'vio-woocommerce-sync' )
+			$locked ? ' disabled' : '',
+			$locked ? '' : self::icon( 'link' ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
+			esc_html__( 'Connect', 'vio-sync-for-woocommerce' )
 		);
 		echo '<span class="vio-save-feedback" id="vio-save-feedback" aria-live="polite"></span>';
 		echo '</div>';
@@ -333,21 +353,21 @@ final class Config_Page {
 	}
 
 	private static function render_sync( array $stats, array $state ): void {
-		$disabled = $state['connected'] ? '' : ' disabled';
+		$idle = $state['connected'] ? '' : ' disabled';
 
 		echo '<section class="vio-card vio-card--sync">';
 		echo '<div class="vio-card__headrow">';
-		echo '<h2 class="vio-card__title">' . self::icon( 'refresh' ) . '' . esc_html__( 'Sync overview', 'vio-woocommerce-sync' ) . '</h2>';
+		echo '<h2 class="vio-card__title">' . self::icon( 'refresh' ) . esc_html__( 'Sync overview', 'vio-sync-for-woocommerce' ) . '</h2>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
 		echo '<div class="vio-card__actions">';
-		echo '<button type="button" class="button button-primary vio-btn vio-btn--primary" id="vio-sync-all"' . $disabled . '><span class="vio-spinner"></span>' . self::icon( 'upload' ) . '' . esc_html__( 'Sync all', 'vio-woocommerce-sync' ) . '</button>';
-		echo '<button type="button" class="button vio-btn" id="vio-finish-sync"' . $disabled . '><span class="vio-spinner"></span>' . self::icon( 'flag' ) . '' . esc_html__( 'Finish first sync', 'vio-woocommerce-sync' ) . '</button>';
+		echo '<button type="button" class="button button-primary vio-btn vio-btn--primary" id="vio-sync-all"' . esc_attr( $idle ) . '><span class="vio-spinner"></span>' . self::icon( 'upload' ) . esc_html__( 'Sync all', 'vio-sync-for-woocommerce' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
+		echo '<button type="button" class="button vio-btn" id="vio-finish-sync"' . esc_attr( $idle ) . '><span class="vio-spinner"></span>' . self::icon( 'flag' ) . esc_html__( 'Finish first sync', 'vio-sync-for-woocommerce' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
 		echo '</div></div>';
 
 		echo '<div class="vio-metrics" id="vio-metrics">';
-		self::metric( 'total', __( 'Total products', 'vio-woocommerce-sync' ), $stats['total'] );
-		self::metric( 'synced', __( 'Synced', 'vio-woocommerce-sync' ), $stats['synced'] );
-		self::metric( 'sent', __( 'Sent · queued', 'vio-woocommerce-sync' ), $stats['sent'] );
-		self::metric( 'not-synced', __( 'Not synced', 'vio-woocommerce-sync' ), $stats['not_synced'] );
+		self::metric( 'total', __( 'Total products', 'vio-sync-for-woocommerce' ), $stats['total'] );
+		self::metric( 'synced', __( 'Synced', 'vio-sync-for-woocommerce' ), $stats['synced'] );
+		self::metric( 'sent', __( 'Sent · queued', 'vio-sync-for-woocommerce' ), $stats['sent'] );
+		self::metric( 'not-synced', __( 'Not synced', 'vio-sync-for-woocommerce' ), $stats['not_synced'] );
 		echo '</div>';
 
 		echo '<div class="vio-syncing" id="vio-sync-progress" hidden>'
@@ -357,12 +377,14 @@ final class Config_Page {
 			. '</div>';
 
 		if ( $stats['sent'] > 0 ) {
-			echo '<p class="vio-note">' . self::icon( 'info' ) . ''
-				. sprintf(
-					/* translators: %d: number of queued products */
-					esc_html__( '%d queued — waiting for Vio to return the product-id (backend).', 'vio-woocommerce-sync' ),
-					(int) $stats['sent']
-				) . '</p>';
+			echo '<p class="vio-note">';
+			echo self::icon( 'info' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
+			printf(
+				/* translators: %d: number of queued products */
+				esc_html__( '%d queued — waiting for Vio to return the product-id (backend).', 'vio-sync-for-woocommerce' ),
+				(int) $stats['sent']
+			);
+			echo '</p>';
 		}
 
 		echo '</section>';
@@ -371,17 +393,17 @@ final class Config_Page {
 	private static function render_logs(): void {
 		echo '<section class="vio-card vio-card--logs" id="vio-logs">';
 		echo '<div class="vio-card__headrow vio-logs__toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="vio-logs-body">';
-		echo '<h2 class="vio-card__title">' . self::icon( 'file-text' ) . '' . esc_html__( 'Logs', 'vio-woocommerce-sync' ) . '</h2>';
-		echo '<span class="vio-logs__chev">' . self::icon( 'chevron' ) . '</span>';
+		echo '<h2 class="vio-card__title">' . self::icon( 'file-text' ) . esc_html__( 'Logs', 'vio-sync-for-woocommerce' ) . '</h2>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
+		echo '<span class="vio-logs__chev">' . self::icon( 'chevron' ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
 		echo '</div>';
 
 		echo '<div class="vio-logs__body" id="vio-logs-body">';
 		echo '<div class="vio-logs__toolbar">';
-		echo '<button type="button" class="button vio-btn" id="vio-logs-refresh"><span class="vio-spinner"></span>' . self::icon( 'refresh' ) . '' . esc_html__( 'Refresh', 'vio-woocommerce-sync' ) . '</button>';
-		echo '<button type="button" class="button vio-btn" id="vio-logs-copy">' . self::icon( 'clipboard' ) . '' . esc_html__( 'Copy for support', 'vio-woocommerce-sync' ) . '</button>';
+		echo '<button type="button" class="button vio-btn" id="vio-logs-refresh"><span class="vio-spinner"></span>' . self::icon( 'refresh' ) . esc_html__( 'Refresh', 'vio-sync-for-woocommerce' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
+		echo '<button type="button" class="button vio-btn" id="vio-logs-copy">' . self::icon( 'clipboard' ) . esc_html__( 'Copy for support', 'vio-sync-for-woocommerce' ) . '</button>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
 		echo '<span class="vio-logs__source">' . esc_html( Plugin::LOG_SOURCE ) . '</span>';
 		echo '</div>';
-		echo '<pre class="vio-logs__pre" id="vio-logs-pre"><span class="vio-muted">' . esc_html__( 'Expand to load recent activity…', 'vio-woocommerce-sync' ) . '</span></pre>';
+		echo '<pre class="vio-logs__pre" id="vio-logs-pre"><span class="vio-muted">' . esc_html__( 'Expand to load recent activity…', 'vio-sync-for-woocommerce' ) . '</span></pre>';
 		echo '</div></section>';
 	}
 
@@ -394,23 +416,28 @@ final class Config_Page {
 		echo '<div class="vio-modal" id="vio-disconnect-modal" hidden>';
 		echo '<div class="vio-modal__overlay" data-close></div>';
 		echo '<div class="vio-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="vio-disconnect-title">';
-		echo '<h2 class="vio-modal__title" id="vio-disconnect-title">' . self::icon( 'link' ) . '' . esc_html__( 'Disconnect from Vio', 'vio-woocommerce-sync' ) . '</h2>';
-		echo '<p class="vio-modal__text">' . esc_html__( 'This removes the API key, REST keys and order webhooks for this store.', 'vio-woocommerce-sync' ) . '</p>';
+		echo '<h2 class="vio-modal__title" id="vio-disconnect-title">' . self::icon( 'link' ) . esc_html__( 'Disconnect from Vio', 'vio-sync-for-woocommerce' ) . '</h2>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
+		echo '<p class="vio-modal__text">' . esc_html__( 'This removes the API key, REST keys and order webhooks for this store.', 'vio-sync-for-woocommerce' ) . '</p>';
 
 		if ( $synced > 0 ) {
-			$count_html = '<strong data-key="synced-count">' . (int) $synced . '</strong>';
-			echo '<label class="vio-modal__check"><input type="checkbox" id="vio-delete-products" checked /> '
-				/* translators: %s: number of synced products */
-				. sprintf( esc_html__( 'Also delete my %s synced product(s) from Vio', 'vio-woocommerce-sync' ), $count_html )
-				. '</label>';
-			echo '<p class="vio-modal__disclaimer" id="vio-delete-disclaimer">' . self::icon( 'info' ) . ''
-				. esc_html__( 'Your products will be deleted from Vio together with the connection. Vio soft-deletes them — existing references won’t break, but the products stop being available.', 'vio-woocommerce-sync' )
-				. '</p>';
+			$count_html = '<strong data-key="synced-count">' . absint( $synced ) . '</strong>';
+			echo '<label class="vio-modal__check"><input type="checkbox" id="vio-delete-products" checked /> ';
+			echo sprintf(
+				/* translators: %s: number of synced products. */
+				esc_html__( 'Also delete my %s synced product(s) from Vio', 'vio-sync-for-woocommerce' ),
+				$count_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hard-coded markup wrapping an absint() count.
+			);
+			echo '</label>';
+
+			echo '<p class="vio-modal__disclaimer" id="vio-delete-disclaimer">';
+			echo self::icon( 'info' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline SVG icon.
+			echo esc_html__( 'Your products will be deleted from Vio together with the connection. Vio soft-deletes them — existing references won’t break, but the products stop being available.', 'vio-sync-for-woocommerce' );
+			echo '</p>';
 		}
 
 		echo '<div class="vio-modal__actions">';
-		echo '<button type="button" class="button vio-btn" data-close>' . esc_html__( 'Cancel', 'vio-woocommerce-sync' ) . '</button>';
-		echo '<button type="button" class="button vio-btn vio-btn--danger" id="vio-disconnect-confirm">' . esc_html__( 'Disconnect', 'vio-woocommerce-sync' ) . '</button>';
+		echo '<button type="button" class="button vio-btn" data-close>' . esc_html__( 'Cancel', 'vio-sync-for-woocommerce' ) . '</button>';
+		echo '<button type="button" class="button vio-btn vio-btn--danger" id="vio-disconnect-confirm">' . esc_html__( 'Disconnect', 'vio-sync-for-woocommerce' ) . '</button>';
 		echo '</div>';
 
 		echo '</div></div>';
@@ -423,7 +450,7 @@ final class Config_Page {
 			'<div class="vio-kv__row"><dt>%s</dt><dd%s>%s</dd></div>',
 			esc_html( $label ),
 			'' !== $field ? ' data-field="' . esc_attr( $field ) . '"' : '',
-			$value_html // Already escaped by callers.
+			$value_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped markup built by each caller (esc_html / sprintf with esc_html).
 		);
 	}
 
@@ -433,7 +460,7 @@ final class Config_Page {
 			esc_attr( $key ),
 			esc_html( $label ),
 			esc_attr( $key ),
-			$value
+			(int) $value
 		);
 	}
 }

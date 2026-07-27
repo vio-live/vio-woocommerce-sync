@@ -129,9 +129,8 @@ final class Sync {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
 		$post_ids = $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE meta_key IN ( %s, %s ) AND meta_value <> ''",
-				Plugin::META_PRODUCT_ID,
-				Plugin::META_LEGACY_PRODUCT_ID
+				"SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value <> ''",
+				Plugin::META_PRODUCT_ID
 			)
 		);
 
@@ -156,7 +155,7 @@ final class Sync {
 
 	/** Per-product sync meta the plugin writes; cleared on unlink/disconnect. */
 	private static function sync_meta_keys(): array {
-		return [ Plugin::META_PRODUCT_ID, Plugin::META_LEGACY_PRODUCT_ID, Plugin::META_SQS_ID, Plugin::META_APIKEY, Plugin::META_UID ];
+		return [ Plugin::META_PRODUCT_ID, Plugin::META_SQS_ID, Plugin::META_APIKEY, Plugin::META_UID ];
 	}
 
 	private static function clear_product_meta( int $post_id ): void {
@@ -180,19 +179,21 @@ final class Sync {
 		$keys         = self::sync_meta_keys();
 		$placeholders = implode( ',', array_fill( 0, count( $keys ), '%s' ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL, WordPress.DB.PreparedSQLPlaceholders -- $placeholders is a list of %s built from a fixed internal meta-key set, prepared with $keys.
 		$post_ids = $wpdb->get_col(
 			$wpdb->prepare( "SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE meta_key IN ({$placeholders})", $keys )
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL, WordPress.DB.PreparedSQLPlaceholders
 
 		if ( empty( $post_ids ) ) {
 			return 0;
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL, WordPress.DB.PreparedSQLPlaceholders -- $placeholders is a list of %s built from a fixed internal meta-key set, prepared with $keys.
 		$wpdb->query(
 			$wpdb->prepare( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ({$placeholders})", $keys )
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL, WordPress.DB.PreparedSQLPlaceholders
 
 		foreach ( $post_ids as $post_id ) {
 			wp_cache_delete( (int) $post_id, 'post_meta' );

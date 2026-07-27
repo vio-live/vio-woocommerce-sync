@@ -31,15 +31,7 @@ final class Product_Mapper {
 	 * Return the Vio product id linked to a WooCommerce post, for a given API key.
 	 */
 	public static function get_remote_product_id( string $user_api_key, int $post_id ): ?string {
-		$id = self::parse_remote_id( get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true ), $user_api_key );
-		if ( null !== $id ) {
-			return $id;
-		}
-
-		// Fallback: the backend writes the id back under the legacy Reachu key.
-		// reconcile_remote_ids() backfills META_PRODUCT_ID from it, but read it
-		// directly here so auto-update/delete resolve before the backfill runs.
-		return self::parse_remote_id( get_post_meta( $post_id, Plugin::META_LEGACY_PRODUCT_ID, true ), $user_api_key );
+		return self::parse_remote_id( get_post_meta( $post_id, Plugin::META_PRODUCT_ID, true ), $user_api_key );
 	}
 
 	/**

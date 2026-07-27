@@ -45,7 +45,7 @@
 		var select = $( this ).attr( 'id' ) === 'doaction2' ? '#bulk-action-selector-bottom' : '#bulk-action-selector-top';
 		var action = $( select ).val();
 
-		if ( action !== 'vio_sync' && action !== 'vio_delete' ) {
+		if ( action !== 'vio_sync' && action !== 'vio_delete' && action !== 'vio_unsync' ) {
 			return;
 		}
 		e.preventDefault();
@@ -61,7 +61,8 @@
 		var total = infos.length, done = 0, i = 0, hadSuccess = false;
 		var chunks = chunk( infos, 5 );
 
-		$label.text( 'vio_delete' === action ? 'Deleting from Vio…' : 'Syncing products…' );
+		var labels = { vio_sync: 'Syncing products…', vio_unsync: 'Unsyncing products…', vio_delete: 'Deleting from Vio…' };
+		$label.text( labels[ action ] || 'Working…' );
 		$count.text( '0 / ' + total );
 		$fill.css( 'width', '0%' );
 		$items.empty();

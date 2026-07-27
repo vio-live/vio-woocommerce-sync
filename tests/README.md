@@ -21,7 +21,7 @@ In the local docker dev env:
 ```sh
 docker compose -f ~/.wp-env/<project>/docker-compose.yml \
   --project-directory ~/.wp-env/<project> \
-  exec -T cli sh -c 'cd /var/www/html/wp-content/plugins/vio-woocommerce-sync && phpunit'
+  exec -T cli sh -c 'cd /var/www/html/wp-content/plugins/vio-sync-for-woocommerce && phpunit'
 ```
 
 ## Coverage
