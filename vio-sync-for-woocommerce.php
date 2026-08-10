@@ -1,7 +1,6 @@
 <?php
 /**
  * Plugin Name:          Vio Sync for WooCommerce
- * Plugin URI:           https://vio.live/
  * Description:          Sync WooCommerce products to the Vio platform (inventory, prices, variants and images).
  * Version:              1.0.0
  * Requires at least:    6.0
