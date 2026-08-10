@@ -1,5 +1,5 @@
 === Vio Sync for WooCommerce ===
-Contributors: vio
+Contributors: violive
 Tags: woocommerce, sync, products, inventory, ecommerce
 Requires at least: 6.0
 Tested up to: 7.0
@@ -77,9 +77,8 @@ The plugin removes the Vio API key, the REST keys and the order webhooks from yo
 == Screenshots ==
 
 1. The Vio configuration screen — connection status, settings and sync overview.
-2. Connecting the store with your Vio API key.
-3. The product list with the Vio sync column and bulk actions.
-4. Syncing products with live progress.
+2. The product list with the Vio "Synced" status column and bulk actions (Sync, Unsync, Delete from Vio).
+3. Bulk-syncing products to Vio with live progress.
 
 == Changelog ==
 

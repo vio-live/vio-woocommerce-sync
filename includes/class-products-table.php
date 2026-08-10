@@ -71,12 +71,16 @@ final class Products_Table {
 		$sqs_id     = get_post_meta( $post_id, Plugin::META_SQS_ID, true );
 
 		if ( $product_id ) {
-			printf(
-				'<img class="vio-icon" src="%s" alt="%s" title="%s" width="20" />',
-				esc_url( VIO_WC_SYNC_URL . 'assets/img/icon.svg' ),
-				esc_attr__( 'Synced with Vio', 'vio-sync-for-woocommerce' ),
-				esc_attr__( 'Synced with Vio', 'vio-sync-for-woocommerce' )
+			$synced_title = sprintf(
+				/* translators: %s: the product's Vio ID. */
+				__( 'Synced with Vio · product #%s', 'vio-sync-for-woocommerce' ),
+				(string) $product_id
 			);
+			printf( '<span class="vio-synced" title="%s">', esc_attr( $synced_title ) );
+			// Self-contained checkmark — static markup, no dynamic data.
+			echo '<svg class="vio-synced__check" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M4 10.5l3.5 3.5L16 5.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+			echo '<span class="vio-synced__label">' . esc_html__( 'Synced', 'vio-sync-for-woocommerce' ) . '</span>';
+			echo '</span>';
 		} elseif ( $sqs_id ) {
 			echo '<span class="vio-syncing" title="'
 				. esc_attr__( 'Sent to Vio — waiting for it to finish processing the product.', 'vio-sync-for-woocommerce' )

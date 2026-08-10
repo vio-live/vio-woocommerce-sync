@@ -8,8 +8,27 @@
 }
 
 .column-col_vio_sync {
-	width: 75px !important;
+	width: 92px !important;
 	text-align: center;
+}
+
+/* Synced badge: green check + "Synced" (brand green from the Connected state). */
+.vio-synced {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: #1d643b;
+	font-weight: 600;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.vio-synced__check {
+	flex: none;
+}
+
+.vio-synced__label {
+	font-size: 12px;
 }
 
 .vio-syncing {
