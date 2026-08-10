@@ -12,7 +12,7 @@ Sync your WooCommerce products to the Vio platform — inventory, prices, varian
 
 == Description ==
 
-Vio Sync for WooCommerce connects your WooCommerce store with [Vio](https://vio.live/) and keeps your catalogue in sync, so you can sell your WooCommerce products through Vio.
+Vio Sync for WooCommerce connects your WooCommerce store with [Vio](https://www.vio.live/) and keeps your catalogue in sync, so you can sell your WooCommerce products through Vio.
 
 * Export products — individually or in bulk — to Vio.
 * Sync prices, stock, variants, attributes and images.
@@ -37,9 +37,9 @@ What is sent to Vio, and when:
 
 The service is operated by Vio. Please review their terms before connecting:
 
-* Website: https://vio.live/
-* Terms of Service: https://vio.live/terms
-* Privacy Policy: https://vio.live/privacy
+* Website: https://www.vio.live/
+* Terms of Service: https://www.vio.live/terms
+* Privacy Policy: https://www.vio.live/privacy
 
 == Installation ==
 
