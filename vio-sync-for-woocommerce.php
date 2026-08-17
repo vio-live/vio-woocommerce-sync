@@ -15,29 +15,29 @@
  * WC requires at least: 8.0
  * WC tested up to:      10.9
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'VIO_WC_SYNC_VERSION', '1.0.0' );
-define( 'VIO_WC_SYNC_FILE', __FILE__ );
-define( 'VIO_WC_SYNC_DIR', plugin_dir_path( __FILE__ ) );
-define( 'VIO_WC_SYNC_URL', plugin_dir_url( __FILE__ ) );
-define( 'VIO_WC_SYNC_BASENAME', plugin_basename( __FILE__ ) );
+define( 'VIOSYNC_VERSION', '1.0.0' );
+define( 'VIOSYNC_FILE', __FILE__ );
+define( 'VIOSYNC_DIR', plugin_dir_path( __FILE__ ) );
+define( 'VIOSYNC_URL', plugin_dir_url( __FILE__ ) );
+define( 'VIOSYNC_BASENAME', plugin_basename( __FILE__ ) );
 
 // Class loading (no Composer: explicit requires in dependency order).
-require_once VIO_WC_SYNC_DIR . 'includes/class-logger.php';
-require_once VIO_WC_SYNC_DIR . 'includes/class-api-client.php';
-require_once VIO_WC_SYNC_DIR . 'includes/class-product-mapper.php';
-require_once VIO_WC_SYNC_DIR . 'includes/class-sync.php';
-require_once VIO_WC_SYNC_DIR . 'includes/class-store-status.php';
-require_once VIO_WC_SYNC_DIR . 'includes/class-config-page.php';
-require_once VIO_WC_SYNC_DIR . 'includes/class-products-table.php';
-require_once VIO_WC_SYNC_DIR . 'includes/class-ajax.php';
-require_once VIO_WC_SYNC_DIR . 'includes/class-plugin.php';
+require_once VIOSYNC_DIR . 'includes/class-logger.php';
+require_once VIOSYNC_DIR . 'includes/class-api-client.php';
+require_once VIOSYNC_DIR . 'includes/class-product-mapper.php';
+require_once VIOSYNC_DIR . 'includes/class-sync.php';
+require_once VIOSYNC_DIR . 'includes/class-store-status.php';
+require_once VIOSYNC_DIR . 'includes/class-config-page.php';
+require_once VIOSYNC_DIR . 'includes/class-products-table.php';
+require_once VIOSYNC_DIR . 'includes/class-ajax.php';
+require_once VIOSYNC_DIR . 'includes/class-plugin.php';
 
 // Declare HPOS (High-Performance Order Storage) compatibility.
 add_action(
@@ -46,7 +46,7 @@ add_action(
 		if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
 			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility(
 				'custom_order_tables',
-				VIO_WC_SYNC_FILE,
+				VIOSYNC_FILE,
 				true
 			);
 		}
@@ -54,8 +54,8 @@ add_action(
 );
 
 // Plugin bootstrap.
-add_action( 'plugins_loaded', [ \Vio\WooSync\Plugin::class, 'init' ] );
+add_action( 'plugins_loaded', [ \VioSync\Plugin::class, 'init' ] );
 
 // Lifecycle.
-register_activation_hook( __FILE__, [ \Vio\WooSync\Plugin::class, 'activate' ] );
-register_deactivation_hook( __FILE__, [ \Vio\WooSync\Plugin::class, 'deactivate' ] );
+register_activation_hook( __FILE__, [ \VioSync\Plugin::class, 'activate' ] );
+register_deactivation_hook( __FILE__, [ \VioSync\Plugin::class, 'deactivate' ] );

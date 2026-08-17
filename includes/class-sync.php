@@ -3,12 +3,12 @@
  * Sync service: business logic to push, update and delete products in Vio.
  * Used by both the AJAX actions and the auto-sync hooks.
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
-namespace Vio\WooSync;
+namespace VioSync;
 
 defined( 'ABSPATH' ) || exit;
 

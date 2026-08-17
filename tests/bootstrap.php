@@ -7,7 +7,7 @@
  * Run from an environment where wp-load.php is reachable (the WordPress/CLI
  * container). Override the path with WP_LOAD_PATH if needed.
  *
- * @package Vio\WooSync\Tests
+ * @package VioSync\Tests
  */
 
 declare( strict_types=1 );
@@ -31,7 +31,7 @@ if ( ! defined( 'WP_USE_THEMES' ) ) {
 
 require $wp_load;
 
-if ( ! class_exists( \Vio\WooSync\Config_Page::class ) ) {
+if ( ! class_exists( \VioSync\Config_Page::class ) ) {
 	fwrite( STDERR, "vio tests: plugin not loaded (is Vio Sync for WooCommerce active?).\n" );
 	exit( 1 );
 }

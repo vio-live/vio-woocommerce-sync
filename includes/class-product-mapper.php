@@ -3,12 +3,12 @@
  * Maps WooCommerce products to the Vio DTO and computes the changes (diff)
  * between the WooCommerce state and the Vio state before updating.
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
-namespace Vio\WooSync;
+namespace VioSync;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -399,8 +399,8 @@ final class Product_Mapper {
 		return $url_a === $url_b;
 	}
 
-	private static function compare_variants( array $woo_variants, $vio_variants ): array {
-		$vio_variants = (array) $vio_variants;
+	private static function compare_variants( array $woo_variants, $viosync_variants ): array {
+		$viosync_variants = (array) $viosync_variants;
 
 		foreach ( $woo_variants as $woo_variant ) {
 			if ( ! empty( $woo_variant['images'] ) && is_array( $woo_variant['images'] ) ) {
@@ -412,8 +412,8 @@ final class Product_Mapper {
 				}
 			}
 
-			$vio_variant = self::find_variant_by_origin( $vio_variants, $woo_variant['originId'] ?? null );
-			if ( $vio_variant && self::variant_changed( $woo_variant, $vio_variant ) ) {
+			$viosync_variant = self::find_variant_by_origin( $viosync_variants, $woo_variant['originId'] ?? null );
+			if ( $viosync_variant && self::variant_changed( $woo_variant, $viosync_variant ) ) {
 				return $woo_variants;
 			}
 		}

@@ -3,30 +3,30 @@
  * AJAX actions. All require an authenticated user with capability + nonce
  * (no `nopriv` variants are registered).
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
-namespace Vio\WooSync;
+namespace VioSync;
 
 defined( 'ABSPATH' ) || exit;
 
 final class Ajax {
 
 	public static function init(): void {
-		add_action( 'wp_ajax_vio_sync', [ self::class, 'sync' ] );
-		add_action( 'wp_ajax_vio_delete', [ self::class, 'delete' ] );
-		add_action( 'wp_ajax_vio_unsync', [ self::class, 'unsync' ] );
-		add_action( 'wp_ajax_vio_finish_sync', [ self::class, 'finish_sync' ] );
-		add_action( 'wp_ajax_vio_save_settings', [ self::class, 'save_settings' ] );
-		add_action( 'wp_ajax_vio_logout', [ self::class, 'logout' ] );
-		add_action( 'wp_ajax_vio_save_config', [ self::class, 'save_config' ] );
-		add_action( 'wp_ajax_vio_health', [ self::class, 'health' ] );
-		add_action( 'wp_ajax_vio_stats', [ self::class, 'stats' ] );
-		add_action( 'wp_ajax_vio_pending_ids', [ self::class, 'pending_ids' ] );
-		add_action( 'wp_ajax_vio_logs', [ self::class, 'logs' ] );
-		add_action( 'wp_ajax_vio_connect', [ self::class, 'connect' ] );
+		add_action( 'wp_ajax_viosync_sync', [ self::class, 'sync' ] );
+		add_action( 'wp_ajax_viosync_delete', [ self::class, 'delete' ] );
+		add_action( 'wp_ajax_viosync_unsync', [ self::class, 'unsync' ] );
+		add_action( 'wp_ajax_viosync_finish_sync', [ self::class, 'finish_sync' ] );
+		add_action( 'wp_ajax_viosync_save_settings', [ self::class, 'save_settings' ] );
+		add_action( 'wp_ajax_viosync_logout', [ self::class, 'logout' ] );
+		add_action( 'wp_ajax_viosync_save_config', [ self::class, 'save_config' ] );
+		add_action( 'wp_ajax_viosync_health', [ self::class, 'health' ] );
+		add_action( 'wp_ajax_viosync_stats', [ self::class, 'stats' ] );
+		add_action( 'wp_ajax_viosync_pending_ids', [ self::class, 'pending_ids' ] );
+		add_action( 'wp_ajax_viosync_logs', [ self::class, 'logs' ] );
+		add_action( 'wp_ajax_viosync_connect', [ self::class, 'connect' ] );
 	}
 
 	/** Checks capability; bails with 403 if the user lacks it. */
@@ -44,7 +44,7 @@ final class Ajax {
 	}
 
 	public static function sync(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 
 		$post_ids = self::post_ids();
@@ -60,7 +60,7 @@ final class Ajax {
 	}
 
 	public static function delete(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 
 		$post_ids = self::post_ids();
@@ -94,7 +94,7 @@ final class Ajax {
 	 * The reverse of a sync, without the remote delete that "Delete from Vio" does.
 	 */
 	public static function unsync(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 
 		$post_ids = self::post_ids();
@@ -112,7 +112,7 @@ final class Ajax {
 	}
 
 	public static function finish_sync(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 
 		Logger::info( '[finish_sync] notifying first-sync completion' );
@@ -121,7 +121,7 @@ final class Ajax {
 	}
 
 	public static function save_settings(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 
 		$currency = isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( $_POST['currency'] ) ) : '';
@@ -131,7 +131,7 @@ final class Ajax {
 	}
 
 	public static function save_config(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 
 		$apikey   = isset( $_POST['apikey'] ) ? sanitize_text_field( wp_unslash( $_POST['apikey'] ) ) : '';
@@ -150,7 +150,7 @@ final class Ajax {
 	 * key, return the same status-aware message the page shows.
 	 */
 	public static function connect(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 
 		$apikey   = isset( $_POST['apikey'] ) ? sanitize_text_field( wp_unslash( $_POST['apikey'] ) ) : '';
@@ -178,20 +178,20 @@ final class Ajax {
 	}
 
 	public static function health(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 		wp_send_json_success( Store_Status::health_payload() );
 	}
 
 	public static function stats(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 		Store_Status::reconcile_remote_ids();
 		wp_send_json_success( Store_Status::stats() );
 	}
 
 	public static function pending_ids(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 		// Link already-created products first so "Sync all" doesn't re-queue them.
 		Store_Status::reconcile_remote_ids();
@@ -209,19 +209,19 @@ final class Ajax {
 	}
 
 	public static function logs(): void {
-		check_ajax_referer( 'vio_sync', 'nonce' );
+		check_ajax_referer( 'viosync_sync', 'nonce' );
 		self::guard();
 		wp_send_json_success( [ 'lines' => Logger::recent( 120 ) ] );
 	}
 
 	public static function logout(): void {
-		check_admin_referer( 'vio_logout' );
+		check_admin_referer( 'viosync_logout' );
 		self::guard();
 
 		// If the user opted in, delete this store's products in Vio first — while
 		// the API key is still valid (the backend soft-deletes them).
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce checked above.
-		$deleted = isset( $_GET['vio_delete'] ) ? Sync::delete_all_remote( Api_Client::api_key() ) : 0;
+		$deleted = isset( $_GET['viosync_delete'] ) ? Sync::delete_all_remote( Api_Client::api_key() ) : 0;
 
 		// Tear down the backend connection too, while the key is still valid:
 		// resolve this store's credential + ecom-user ids, then delete it.
@@ -241,9 +241,9 @@ final class Ajax {
 		Sync::unlink_all_products();
 
 		Logger::info( '[logout] store disconnected from Vio' . ( $deleted ? " (deleted {$deleted} product(s) in Vio)" : '' ) );
-		$redirect = admin_url( 'admin.php?page=' . Config_Page::MENU_SLUG . '&vio_disconnected=1' );
+		$redirect = admin_url( 'admin.php?page=' . Config_Page::MENU_SLUG . '&viosync_disconnected=1' );
 		if ( $deleted ) {
-			$redirect = add_query_arg( 'vio_deleted', $deleted, $redirect );
+			$redirect = add_query_arg( 'viosync_deleted', $deleted, $redirect );
 		}
 		wp_safe_redirect( $redirect );
 		exit;

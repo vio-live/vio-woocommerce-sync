@@ -2,12 +2,12 @@
 /**
  * Plugin logger (wrapper around the WooCommerce logger).
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
-namespace Vio\WooSync;
+namespace VioSync;
 
 defined( 'ABSPATH' ) || exit;
 

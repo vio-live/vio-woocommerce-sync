@@ -50,7 +50,7 @@ The service is operated by Vio. Please review their terms before connecting:
 
 The environment can also be forced from `wp-config.php`:
 
-`define( 'VIO_WC_SYNC_ENV', 'staging' );`
+`define( 'VIOSYNC_ENV', 'staging' );`
 
 == Frequently Asked Questions ==
 
@@ -64,7 +64,7 @@ Your product data (title, prices, stock, variants, images, etc.), your store URL
 
 = Can I test against a staging environment first? =
 
-Yes — pick **Staging** in the environment selector (or set `VIO_WC_SYNC_ENV` in `wp-config.php`).
+Yes — pick **Staging** in the environment selector (or set `VIOSYNC_ENV` in `wp-config.php`).
 
 = Is it compatible with HPOS? =
 

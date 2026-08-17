@@ -45,7 +45,7 @@
 		var select = $( this ).attr( 'id' ) === 'doaction2' ? '#bulk-action-selector-bottom' : '#bulk-action-selector-top';
 		var action = $( select ).val();
 
-		if ( action !== 'vio_sync' && action !== 'vio_delete' && action !== 'vio_unsync' ) {
+		if ( action !== 'viosync_sync' && action !== 'viosync_delete' && action !== 'viosync_unsync' ) {
 			return;
 		}
 		e.preventDefault();
@@ -61,7 +61,7 @@
 		var total = infos.length, done = 0, i = 0, hadSuccess = false;
 		var chunks = chunk( infos, 5 );
 
-		var labels = { vio_sync: 'Syncing products…', vio_unsync: 'Unsyncing products…', vio_delete: 'Deleting from Vio…' };
+		var labels = { viosync_sync: 'Syncing products…', viosync_unsync: 'Unsyncing products…', viosync_delete: 'Deleting from Vio…' };
 		$label.text( labels[ action ] || 'Working…' );
 		$count.text( '0 / ' + total );
 		$fill.css( 'width', '0%' );
@@ -90,8 +90,8 @@
 				$label.text( 'Done' );
 				$count.text( total + ' / ' + total );
 				$modal.addClass( 'is-done' );
-				if ( 'vio_sync' === action && hadSuccess ) {
-					$.post( vioWcSync.ajaxUrl, { action: 'vio_finish_sync', nonce: vioWcSync.nonce } ).always( reloadSoon );
+				if ( 'viosync_sync' === action && hadSuccess ) {
+					$.post( viosyncData.ajaxUrl, { action: 'viosync_finish_sync', nonce: viosyncData.nonce } ).always( reloadSoon );
 				} else {
 					reloadSoon();
 				}
@@ -103,9 +103,9 @@
 			var $rows = addRows( batch );
 
 			$.ajax( {
-				url: vioWcSync.ajaxUrl,
+				url: viosyncData.ajaxUrl,
 				type: 'post',
-				data: { action: action, nonce: vioWcSync.nonce, id_posts: ids }
+				data: { action: action, nonce: viosyncData.nonce, id_posts: ids }
 			} )
 				.done( function () { hadSuccess = true; } )
 				.always( function () {

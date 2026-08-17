@@ -3,18 +3,18 @@
  * Product-list integration: status column, bulk actions and auto-sync on
  * save / trash / delete.
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
-namespace Vio\WooSync;
+namespace VioSync;
 
 defined( 'ABSPATH' ) || exit;
 
 final class Products_Table {
 
-	public const COLUMN = 'col_vio_sync';
+	public const COLUMN = 'col_viosync_sync';
 
 	public static function init(): void {
 		add_filter( 'manage_edit-product_columns', [ self::class, 'add_column' ], 20 );
@@ -37,17 +37,17 @@ final class Products_Table {
 		}
 
 		// Version by file mtime so edits bust the browser cache (matches Config_Page).
-		$css_ver = (string) ( @filemtime( VIO_WC_SYNC_DIR . 'assets/css/admin.css' ) ?: VIO_WC_SYNC_VERSION ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
-		$js_ver  = (string) ( @filemtime( VIO_WC_SYNC_DIR . 'assets/js/products.js' ) ?: VIO_WC_SYNC_VERSION ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+		$css_ver = (string) ( @filemtime( VIOSYNC_DIR . 'assets/css/admin.css' ) ?: VIOSYNC_VERSION ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+		$js_ver  = (string) ( @filemtime( VIOSYNC_DIR . 'assets/js/products.js' ) ?: VIOSYNC_VERSION ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
 
-		wp_enqueue_style( 'vio-wc-sync-admin', VIO_WC_SYNC_URL . 'assets/css/admin.css', [], $css_ver );
-		wp_enqueue_script( 'vio-wc-sync-products', VIO_WC_SYNC_URL . 'assets/js/products.js', [ 'jquery' ], $js_ver, true );
+		wp_enqueue_style( 'viosync-admin', VIOSYNC_URL . 'assets/css/admin.css', [], $css_ver );
+		wp_enqueue_script( 'viosync-products', VIOSYNC_URL . 'assets/js/products.js', [ 'jquery' ], $js_ver, true );
 		wp_localize_script(
-			'vio-wc-sync-products',
-			'vioWcSync',
+			'viosync-products',
+			'viosyncData',
 			[
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'vio_sync' ),
+				'nonce'   => wp_create_nonce( 'viosync_sync' ),
 			]
 		);
 	}
@@ -89,9 +89,9 @@ final class Products_Table {
 	}
 
 	public static function add_bulk_actions( array $actions ): array {
-		$actions['vio_sync']   = __( 'Sync', 'vio-sync-for-woocommerce' );
-		$actions['vio_unsync'] = __( 'Unsync', 'vio-sync-for-woocommerce' );
-		$actions['vio_delete'] = __( 'Delete from Vio', 'vio-sync-for-woocommerce' );
+		$actions['viosync_sync']   = __( 'Sync', 'vio-sync-for-woocommerce' );
+		$actions['viosync_unsync'] = __( 'Unsync', 'vio-sync-for-woocommerce' );
+		$actions['viosync_delete'] = __( 'Delete from Vio', 'vio-sync-for-woocommerce' );
 		return $actions;
 	}
 
@@ -112,7 +112,7 @@ final class Products_Table {
 		}
 
 		// Avoid duplicate triggers within the same request.
-		$transient = 'vio_updating_' . $post_id;
+		$transient = 'viosync_updating_' . $post_id;
 		if ( false !== get_transient( $transient ) ) {
 			return;
 		}

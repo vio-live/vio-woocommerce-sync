@@ -2,17 +2,17 @@
 /**
  * Integration tests for the Vio configuration page data layer.
  *
- * @package Vio\WooSync\Tests
+ * @package VioSync\Tests
  */
 
 declare( strict_types=1 );
 
 use PHPUnit\Framework\TestCase;
-use Vio\WooSync\Api_Client;
-use Vio\WooSync\Store_Status;
-use Vio\WooSync\Sync;
-use Vio\WooSync\Logger;
-use Vio\WooSync\Plugin;
+use VioSync\Api_Client;
+use VioSync\Store_Status;
+use VioSync\Sync;
+use VioSync\Logger;
+use VioSync\Plugin;
 
 final class StoreStatusTest extends TestCase {
 

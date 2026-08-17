@@ -5,7 +5,7 @@
 ( function ( $ ) {
 	'use strict';
 
-	var cfg  = window.vioConfig || {};
+	var cfg  = window.viosyncConfig || {};
 	var $doc = $( document );
 
 	function post( action, data ) {
@@ -67,7 +67,7 @@
 
 		// "Connect" mode: save + validate, then jump straight to OAuth.
 		if ( 'connect' === mode ) {
-			post( 'vio_connect', data ).done( function ( r ) {
+			post( 'viosync_connect', data ).done( function ( r ) {
 				if ( r && r.success && r.data && r.data.authUrl ) {
 					feedback( 'Connecting…', true );
 					window.location.href = r.data.authUrl;
@@ -85,7 +85,7 @@
 		}
 
 		// "Save changes" mode (already connected): persist and refresh.
-		post( 'vio_save_config', data ).done( function ( r ) {
+		post( 'viosync_save_config', data ).done( function ( r ) {
 			if ( r && r.success ) {
 				feedback( 'Saved', true );
 				setTimeout( function () { window.location.reload(); }, 650 );
@@ -102,7 +102,7 @@
 	/* 3) Re-check connection — update the card in place (also runs on page load). */
 	function runHealth( $btn ) {
 		if ( $btn ) { spin( $btn, true ); }
-		return post( 'vio_health' ).done( function ( r ) {
+		return post( 'viosync_health' ).done( function ( r ) {
 			if ( r && r.success ) { applyHealth( r.data ); }
 		} ).always( function () { if ( $btn ) { spin( $btn, false ); } } );
 	}
@@ -149,7 +149,7 @@
 		var $list  = $panel.find( '.vio-syncing__items' );
 		spin( $btn, true );
 
-		post( 'vio_pending_ids' ).done( function ( r ) {
+		post( 'viosync_pending_ids' ).done( function ( r ) {
 			var items = ( r && r.success && r.data && r.data.items ) ? r.data.items : [];
 			if ( ! items.length ) {
 				spin( $btn, false );
@@ -182,7 +182,7 @@
 
 			function next() {
 				if ( i >= chunks.length ) {
-					if ( anyOk ) { post( 'vio_finish_sync' ); }
+					if ( anyOk ) { post( 'viosync_finish_sync' ); }
 					$label.text( 'Done' );
 					$count.text( total + ' / ' + total );
 					$panel.addClass( 'is-done' );
@@ -198,7 +198,7 @@
 				var c     = chunks[ i++ ];
 				var ids   = c.map( function ( it ) { return it.id; } );
 				var $rows = addRows( c );
-				post( 'vio_sync', { id_posts: ids } )
+				post( 'viosync_sync', { id_posts: ids } )
 					.done( function () { anyOk = true; } )
 					.always( function () {
 						done += c.length;
@@ -216,7 +216,7 @@
 	$doc.on( 'click', '#vio-finish-sync', function () {
 		var $btn = $( this );
 		spin( $btn, true );
-		post( 'vio_finish_sync' ).always( function () {
+		post( 'viosync_finish_sync' ).always( function () {
 			spin( $btn, false );
 			feedback( 'First sync marked complete', true );
 		} );
@@ -240,7 +240,7 @@
 	function loadLogs() {
 		var $btn = $( '#vio-logs-refresh' );
 		spin( $btn, true );
-		post( 'vio_logs' ).done( function ( r ) {
+		post( 'viosync_logs' ).done( function ( r ) {
 			if ( r && r.success ) { renderLogs( r.data.lines ); logsLoaded = true; }
 		} ).always( function () { spin( $btn, false ); } );
 	}
@@ -280,7 +280,7 @@
 		var href = $( '#vio-disconnect' ).attr( 'href' );
 		var $cb  = $( '#vio-delete-products' );
 		if ( $cb.length && $cb.prop( 'checked' ) ) {
-			href += ( href.indexOf( '?' ) > -1 ? '&' : '?' ) + 'vio_delete=1';
+			href += ( href.indexOf( '?' ) > -1 ? '&' : '?' ) + 'viosync_delete=1';
 		}
 		window.location.href = href;
 	} );
@@ -294,7 +294,7 @@
 	} );
 
 	function refreshStats() {
-		post( 'vio_stats' ).done( function ( r ) {
+		post( 'viosync_stats' ).done( function ( r ) {
 			if ( ! r || ! r.success ) { return; }
 			var d = r.data;
 			setMetric( 'total', d.total );

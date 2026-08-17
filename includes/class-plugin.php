@@ -2,12 +2,12 @@
 /**
  * Plugin orchestrator: central constants, bootstrap and lifecycle.
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
-namespace Vio\WooSync;
+namespace VioSync;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -20,9 +20,9 @@ final class Plugin {
 	public const CAPABILITY = 'manage_woocommerce';
 
 	// --- Database options -------------------------------------------------
-	public const OPT_API_KEY     = 'vio_apikey';
-	public const OPT_CURRENCY    = 'vio_currency';
-	public const OPT_ENVIRONMENT = 'vio_environment';
+	public const OPT_API_KEY     = 'viosync_apikey';
+	public const OPT_CURRENCY    = 'viosync_currency';
+	public const OPT_ENVIRONMENT = 'viosync_environment';
 
 	// --- Post meta keys ---------------------------------------------------
 	public const META_UID        = 'vio-uid';

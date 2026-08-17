@@ -6,12 +6,12 @@
  * settings persistence and diagnostics. The page (Config_Page) and the AJAX
  * endpoints (Ajax) both read from here, and the test suite targets it directly.
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
-namespace Vio\WooSync;
+namespace VioSync;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -262,10 +262,10 @@ final class Store_Status {
 		$hpos = class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' )
 			&& \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
 
-		$override = defined( 'VIO_WC_SYNC_ENV' ) ? (string) VIO_WC_SYNC_ENV : '';
+		$override = defined( 'VIOSYNC_ENV' ) ? (string) VIOSYNC_ENV : '';
 
 		return [
-			'Plugin'       => VIO_WC_SYNC_VERSION,
+			'Plugin'       => VIOSYNC_VERSION,
 			'WooCommerce'  => defined( 'WC_VERSION' ) ? WC_VERSION : '—',
 			'WordPress'    => get_bloginfo( 'version' ),
 			'PHP'          => PHP_VERSION,

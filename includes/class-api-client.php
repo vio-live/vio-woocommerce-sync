@@ -5,12 +5,12 @@
  * Handles environment selection (production / staging), authentication and the
  * call to each endpoint.
  *
- * @package Vio\WooSync
+ * @package VioSync
  */
 
 declare( strict_types=1 );
 
-namespace Vio\WooSync;
+namespace VioSync;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -21,8 +21,8 @@ final class Api_Client {
 	 *
 	 * Each environment can be overridden from wp-config.php (zero code change):
 	 *
-	 *   define( 'VIO_WC_SYNC_API_URL_PRODUCTION', 'https://api-ecom.vio.live' );
-	 *   define( 'VIO_WC_SYNC_API_URL_STAGING',    'https://api-ecom-staging.vio.live' );
+	 *   define( 'VIOSYNC_API_URL_PRODUCTION', 'https://api-ecom.vio.live' );
+	 *   define( 'VIOSYNC_API_URL_STAGING',    'https://api-ecom-staging.vio.live' );
 	 */
 	public const ENVIRONMENTS = [
 		'production' => 'https://api-ecom.vio.live',
@@ -49,13 +49,13 @@ final class Api_Client {
 
 	/**
 	 * Active environment, resolved in cascade:
-	 *   1) VIO_WC_SYNC_ENV constant in wp-config.php
+	 *   1) VIOSYNC_ENV constant in wp-config.php
 	 *   2) the option saved in settings
 	 *   3) default (production)
 	 */
 	public static function environment(): string {
-		if ( defined( 'VIO_WC_SYNC_ENV' ) && isset( self::ENVIRONMENTS[ VIO_WC_SYNC_ENV ] ) ) {
-			return VIO_WC_SYNC_ENV;
+		if ( defined( 'VIOSYNC_ENV' ) && isset( self::ENVIRONMENTS[ VIOSYNC_ENV ] ) ) {
+			return VIOSYNC_ENV;
 		}
 		$env = (string) get_option( Plugin::OPT_ENVIRONMENT, self::DEFAULT_ENVIRONMENT );
 		return isset( self::ENVIRONMENTS[ $env ] ) ? $env : self::DEFAULT_ENVIRONMENT;
@@ -65,7 +65,7 @@ final class Api_Client {
 		$env = self::environment();
 
 		// 1) Per-environment constant in wp-config.php (override without touching code).
-		$constant = 'VIO_WC_SYNC_API_URL_' . strtoupper( $env );
+		$constant = 'VIOSYNC_API_URL_' . strtoupper( $env );
 		if ( defined( $constant ) && '' !== (string) constant( $constant ) ) {
 			$base = (string) constant( $constant );
 		} else {
@@ -73,7 +73,7 @@ final class Api_Client {
 		}
 
 		// 2) Full override filter (e.g. local/ngrok or a brand-new domain).
-		return untrailingslashit( (string) apply_filters( 'vio_wc_sync_api_base', $base, $env ) );
+		return untrailingslashit( (string) apply_filters( 'viosync_api_base', $base, $env ) );
 	}
 
 	public static function api_key(): string {
@@ -121,7 +121,7 @@ final class Api_Client {
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( ! in_array( $code, [ 200, 201 ], true ) ) {
 			Logger::error( sprintf( '[request] %s %s → HTTP %d', $method, $url, $code ) );
-			return new \WP_Error( 'vio_api_error', sprintf( 'HTTP %d', $code ), [ 'status' => $code ] );
+			return new \WP_Error( 'viosync_api_error', sprintf( 'HTTP %d', $code ), [ 'status' => $code ] );
 		}
 
 		return json_decode( wp_remote_retrieve_body( $response ) );
@@ -257,7 +257,7 @@ final class Api_Client {
 		// admin URL — deriving it from REQUEST_URI breaks when this runs inside an
 		// AJAX request (it would point back at admin-ajax.php and render a blank "0").
 		if ( '' === $return_url ) {
-			$return_url = admin_url( 'admin.php?page=vio' );
+			$return_url = admin_url( 'admin.php?page=viosync' );
 		}
 
 		$params = [
