@@ -1,0 +1,25 @@
+name: Deploy to WordPress.org
+
+# Deploys to the WordPress.org SVN repo (trunk + tags/<tag> + assets) whenever a
+# version tag is pushed. Assets come from .wordpress-org/, exclusions from .distignore.
+# Requires two repo secrets: SVN_USERNAME and SVN_PASSWORD (the wordpress.org SVN
+# password, set at https://profiles.wordpress.org/me/profile/edit/group/3/ ).
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  deploy:
+    name: New release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: WordPress.org plugin deploy
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: vio-sync-for-woocommerce
