@@ -2,7 +2,7 @@
 /**
  * Plugin Name:          Vio Sync for WooCommerce
  * Description:          Sync WooCommerce products to the Vio platform (inventory, prices, variants and images).
- * Version:              1.0.0
+ * Version:              1.0.1
  * Requires at least:    6.0
  * Requires PHP:         8.0
  * Author:               Vio
@@ -10,7 +10,6 @@
  * License:              GPL-2.0-or-later
  * License URI:          https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:          vio-sync-for-woocommerce
- * Domain Path:          /languages
  * Requires Plugins:     woocommerce
  * WC requires at least: 8.0
  * WC tested up to:      10.9
@@ -22,7 +21,7 @@ declare( strict_types=1 );
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'VIOSYNC_VERSION', '1.0.0' );
+define( 'VIOSYNC_VERSION', '1.0.1' );
 define( 'VIOSYNC_FILE', __FILE__ );
 define( 'VIOSYNC_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VIOSYNC_URL', plugin_dir_url( __FILE__ ) );

@@ -2,9 +2,9 @@
 Contributors: violive
 Tags: woocommerce, sync, products, inventory, ecommerce
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,10 @@ The plugin removes the Vio API key, the REST keys and the order webhooks from yo
 3. Bulk-syncing products to Vio with live progress.
 
 == Changelog ==
+
+= 1.0.1 =
+* Fix: variable products now sync the price of their cheapest active variation (with its compare-at price when on sale) instead of an empty parent price that Vio stored as 0.
+* Fix: a price update never sends an empty amount.
 
 = 1.0.0 =
 * Initial release: modular WooCommerce → Vio connector with product, variant and image sync, order webhooks, production/staging environments and HPOS support.
