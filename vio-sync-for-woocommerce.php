@@ -2,7 +2,7 @@
 /**
  * Plugin Name:          Vio Sync for WooCommerce
  * Description:          Sync WooCommerce products to the Vio platform (inventory, prices, variants and images).
- * Version:              1.0.1
+ * Version:              1.0.2
  * Requires at least:    6.0
  * Requires PHP:         8.0
  * Author:               Vio
@@ -21,7 +21,7 @@ declare( strict_types=1 );
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'VIOSYNC_VERSION', '1.0.1' );
+define( 'VIOSYNC_VERSION', '1.0.2' );
 define( 'VIOSYNC_FILE', __FILE__ );
 define( 'VIOSYNC_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VIOSYNC_URL', plugin_dir_url( __FILE__ ) );
