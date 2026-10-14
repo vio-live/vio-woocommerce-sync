@@ -73,6 +73,17 @@ final class Product_Mapper {
 
 		[ $variants, $options, $options_enabled, $stock ] = self::collect_variants( $product );
 
+		// A variable product has no price of its own in WooCommerce — only its
+		// variations do — so the parent's regular/sale price is empty and would
+		// land in Vio as 0. Use the cheapest variation instead, mapped exactly
+		// like the variants below (amount = active price, compareAt = regular).
+		if ( $product->is_type( 'variable' ) ) {
+			$from_variants = self::price_from_variants( $variants );
+			if ( null !== $from_variants ) {
+				[ $price_to_use, $compare_at ] = $from_variants;
+			}
+		}
+
 		$dto = [
 			'title'          => $product->get_title(),
 			'description'    => $product->get_description(),
@@ -233,6 +244,33 @@ final class Product_Mapper {
 		return [ $variants, $options, $options_enabled, $stock ];
 	}
 
+	/**
+	 * Price of a variable product: the cheapest variation's price together with
+	 * that same variation's compare-at, so the product never shows a
+	 * price/compare-at pair that no variation actually has.
+	 *
+	 * @param array<int,array<string,mixed>> $variants Variants as built by collect_variants().
+	 * @return array{0:string,1:string}|null [amount, compareAt], or null when no variation has a price.
+	 */
+	public static function price_from_variants( array $variants ): ?array {
+		$cheapest = null;
+		foreach ( $variants as $variant ) {
+			$price = (string) ( $variant['price'] ?? '' );
+			if ( ! is_numeric( $price ) ) {
+				continue;
+			}
+			if ( null === $cheapest || (float) $price < (float) $cheapest['price'] ) {
+				$cheapest = $variant;
+			}
+		}
+
+		if ( null === $cheapest ) {
+			return null;
+		}
+
+		return [ (string) $cheapest['price'], (string) ( $cheapest['priceCompareAt'] ?? '' ) ];
+	}
+
 	// --- Diffing ----------------------------------------------------------
 
 	/**
@@ -366,7 +404,9 @@ final class Product_Mapper {
 		}
 
 		return [
+			// An empty amount is never a price: sending it would set the product to 0 in Vio.
 			'amount'    => isset( $current['amount'], $original['amount'] )
+				&& is_numeric( $current['amount'] )
 				&& abs( (float) $current['amount'] - (float) $original['amount'] ) > self::FLOAT_TOLERANCE,
 			'compareAt' => isset( $current['compareAt'], $original['compareAt'] )
 				&& abs( (float) $current['compareAt'] - (float) $original['compareAt'] ) > self::FLOAT_TOLERANCE,

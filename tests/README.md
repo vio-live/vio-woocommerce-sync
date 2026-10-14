@@ -33,3 +33,5 @@ docker compose -f ~/.wp-env/<project>/docker-compose.yml \
 | `Store_Status::pending_product_ids()` | eligibility (published, unsynced, de-duplicated) and the `limit` cap |
 | `Store_Status::save_options()` | persistence; an invalid environment is ignored, never switching the API target |
 | `Logger::recent()` | result is capped and ordered newest-first |
+| `Product_Mapper::to_dto()` price | variable product = cheapest variation (amount + that variation's compareAt); simple product unchanged |
+| `Product_Mapper::diff()` price | an empty amount is never sent; a product at 0 in Vio gets the variation price on the next update |
