@@ -21,8 +21,11 @@ In the local docker dev env:
 ```sh
 docker compose -f ~/.wp-env/<project>/docker-compose.yml \
   --project-directory ~/.wp-env/<project> \
-  exec -T cli sh -c 'cd /var/www/html/wp-content/plugins/vio-sync-for-woocommerce && phpunit'
+  exec -T cli sh -c 'cd /var/www/html/wp-content/plugins/vio-woocommerce-sync && phpunit'
 ```
+
+The dev env mounts the plugin under its repo folder name (`vio-woocommerce-sync`),
+not the wp.org slug.
 
 ## Coverage
 
@@ -35,3 +38,4 @@ docker compose -f ~/.wp-env/<project>/docker-compose.yml \
 | `Logger::recent()` | result is capped and ordered newest-first |
 | `Product_Mapper::to_dto()` price | variable product = cheapest variation (amount + that variation's compareAt); simple product unchanged |
 | `Product_Mapper::diff()` price | an empty amount is never sent; a product at 0 in Vio gets the variation price on the next update |
+| `Products_Table` auto-sync | a variation saved from the admin (parent → variation → parent) syncs once with the final price; a variation saved alone syncs its parent; several saves in one request sync once; a product trashed in the same request is not updated. Vio calls are intercepted |

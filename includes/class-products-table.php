@@ -16,6 +16,15 @@ final class Products_Table {
 
 	public const COLUMN = 'col_viosync_sync';
 
+	/**
+	 * Runs after WooCommerce's deferred product sync (shutdown, priority 10),
+	 * which saves a variable parent once more with its final variation data.
+	 */
+	private const FLUSH_PRIORITY = 20;
+
+	/** @var array<int,true> Products saved during this request, synced once on shutdown. */
+	private static $pending = [];
+
 	public static function init(): void {
 		add_filter( 'manage_edit-product_columns', [ self::class, 'add_column' ], 20 );
 		add_action( 'manage_product_posts_custom_column', [ self::class, 'render_column' ], 10, 2 );
@@ -24,6 +33,9 @@ final class Products_Table {
 
 		add_action( 'woocommerce_update_product', [ self::class, 'on_save_product' ] );
 		add_action( 'woocommerce_new_product', [ self::class, 'on_save_product' ] );
+		add_action( 'woocommerce_update_product_variation', [ self::class, 'on_save_variation' ], 10, 2 );
+		add_action( 'woocommerce_new_product_variation', [ self::class, 'on_save_variation' ], 10, 2 );
+		add_action( 'shutdown', [ self::class, 'flush_pending' ], self::FLUSH_PRIORITY );
 		add_action( 'wp_trash_post', [ self::class, 'on_trash_post' ] );
 		add_action( 'before_delete_post', [ self::class, 'on_before_delete' ] );
 
@@ -100,25 +112,53 @@ final class Products_Table {
 	}
 
 	/**
-	 * Auto-sync on product create/update.
+	 * Auto-sync on product create/update: queue it, sync once at the end of the request.
+	 *
+	 * Syncing right away sent stale data: when variations are saved, WooCommerce saves the
+	 * parent before them (default attributes) and again after them (deferred sync), so the
+	 * first save still carries the old variation data.
 	 *
 	 * @param int|string $post_id
 	 */
 	public static function on_save_product( $post_id ): void {
-		$post_id = (int) $post_id;
+		if ( ! Api_Client::has_api_key() ) {
+			return;
+		}
+		self::$pending[ (int) $post_id ] = true;
+	}
+
+	/**
+	 * A variation change is a change of its parent product in Vio.
+	 *
+	 * @param int|string       $variation_id
+	 * @param \WC_Product|null $variation
+	 */
+	public static function on_save_variation( $variation_id, $variation = null ): void {
+		$parent_id = $variation instanceof \WC_Product
+			? $variation->get_parent_id()
+			: wp_get_post_parent_id( (int) $variation_id );
+		if ( $parent_id ) {
+			self::on_save_product( $parent_id );
+		}
+	}
+
+	/** Sync every product saved during this request, once, with its final data. */
+	public static function flush_pending(): void {
+		$post_ids      = array_keys( self::$pending );
+		self::$pending = [];
+
 		$api_key = Api_Client::api_key();
 		if ( '' === $api_key ) {
 			return;
 		}
 
-		// Avoid duplicate triggers within the same request.
-		$transient = 'viosync_updating_' . $post_id;
-		if ( false !== get_transient( $transient ) ) {
-			return;
+		foreach ( $post_ids as $post_id ) {
+			// Deleted or trashed during the request: the trash/delete handlers own it.
+			if ( 'product' !== get_post_type( $post_id ) || 'trash' === get_post_status( $post_id ) ) {
+				continue;
+			}
+			Sync::update_product( $post_id, $api_key );
 		}
-		set_transient( $transient, $post_id, 5 );
-
-		Sync::update_product( $post_id, $api_key );
 	}
 
 	/**
